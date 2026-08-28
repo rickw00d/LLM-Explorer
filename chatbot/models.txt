@@ -1,0 +1,31 @@
+# 要在 Open WebUI 裡使用的 LLM 清單（每行一個 Ollama model tag）
+# 用 # 開頭的行會被略過。改完存檔後執行 ./pull-models.sh 下載。
+# 完整清單見 https://ollama.com/library
+#
+# 注意：部分新 tag（qwen3.6 等）可能尚未上架，pull 失敗時請到 ollama.com/library 確認。
+# 你有 128GB 統一記憶體，可放心跑大模型，或同時載入多個中型模型。
+
+# --- 日常聊天（推薦預設）---
+qwen3.6:27b            # 最佳日常聊天 · 中英雙語 · 256K 上下文 · ~17GB
+gemma3:27b            # Google 通用聊天 · 視覺 · ~20GB
+
+# --- 推理 / 數學 ---
+deepseek-r1:70b        # 最強本地推理/數學 · 思維鏈 · ~43GB
+# deepseek-r1:32b      # 推理蒸餾版，較輕 · ~20GB
+
+# --- 寫程式 ---
+qwen3-coder:30b        # 頂級程式碼模型 · 256K 上下文 · ~19GB
+# devstral:24b         # Agent/SWE-bench 程式碼 · ~14GB
+
+# --- 大模型（有 128GB 才建議）---
+gpt-oss:120b           # OpenAI 開源 MoE · 強推理/工具使用 · ~65GB
+# gpt-oss:20b          # 輕量版 · ~14GB
+
+# --- 輕量 / 快速 ---
+qwen3:8b               # 輕量快速 · 29+ 語言 · ~5GB
+
+# --- 其他可選（想跑再取消註解）---
+# llama3.3:70b         # 穩定通用 RAG 主力 · ~43GB
+# qwen2.5:72b          # 成熟穩定多語 · ~45GB
+# glm-4.7-flash        # 中文強 · 198K 上下文 · ~19GB
+# qwen3:32b            # 平衡型多語

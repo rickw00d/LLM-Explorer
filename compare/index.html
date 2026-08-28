@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模型比較 · 影片 & 圖片生成</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#faf9f7; --panel:#ffffff; --panel2:#f4f3f0; --line:#e8e5df;
+    --fg:#2c2825; --mut:#8a837a; --acc:#d96b3a; --acc2:#c45a2d; --acc-light:#fdf3ee;
+    --ok:#3d9a6e; --err:#c94a4a; --chip:#f4f3f0;
+    --teal:#2a8f8f; --plum:#7c5c8a;
+    --shadow-sm:0 1px 4px rgba(44,40,37,.06);
+    --shadow-md:0 4px 16px rgba(44,40,37,.08);
+    --shadow-lg:0 8px 32px rgba(44,40,37,.1);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--fg);font:15px/1.6 'DM Sans',-apple-system,"Noto Sans TC",Segoe UI,sans-serif;
+       background:
+         radial-gradient(ellipse 80% 50% at 20% 0%,rgba(42,143,143,.06),transparent 60%),
+         radial-gradient(ellipse 60% 40% at 85% 30%,rgba(217,107,58,.05),transparent 50%),
+         radial-gradient(ellipse 70% 50% at 50% 100%,rgba(124,92,138,.05),transparent 50%),
+         url('bg.png') center top / 1200px auto repeat,
+         var(--bg)}
+
+  header{padding:0;background:var(--panel);border-bottom:1px solid var(--line);
+         box-shadow:var(--shadow-sm);overflow:hidden}
+  .hero-banner{width:100%;height:160px;background:url('hero.png') center/cover no-repeat;
+         position:relative}
+  .hero-banner::after{content:'';position:absolute;bottom:0;left:0;right:0;height:60px;
+         background:linear-gradient(transparent,var(--panel))}
+  .hero-bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;position:relative}
+  .hero-bar::before{content:'';display:block;width:5px;align-self:stretch;
+         background:linear-gradient(180deg,var(--acc),var(--teal))}
+  header .hw{padding:12px 20px}
+  header h1{font-size:21px;margin:0;font-weight:700;color:var(--fg);letter-spacing:-.3px}
+  header .sub{color:var(--mut);font-size:13px;margin-top:2px}
+
+  main{max-width:1200px;margin:0 auto;padding:24px 24px 60px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;
+        margin-bottom:20px;box-shadow:var(--shadow-sm);transition:box-shadow .25s}
+  label{display:block;font-size:12px;color:var(--mut);margin:0 0 6px;font-weight:600;
+        text-transform:uppercase;letter-spacing:.5px}
+  textarea,input[type=number],select{width:100%;background:var(--panel2);color:var(--fg);
+       border:1px solid var(--line);border-radius:10px;padding:10px 14px;font:inherit;
+       transition:border-color .2s,box-shadow .2s}
+  textarea:focus,input[type=number]:focus,select:focus{outline:none;border-color:var(--acc);
+       box-shadow:0 0 0 3px rgba(217,107,58,.12)}
+  textarea{min-height:74px;resize:vertical}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+  .row>div{flex:1;min-width:120px}
+  .seed{max-width:200px}
+
+  .btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:11px 24px;
+       font:inherit;font-weight:600;cursor:pointer;letter-spacing:.2px;
+       box-shadow:0 2px 8px rgba(217,107,58,.25);transition:all .2s}
+  .btn:hover:not(:disabled){background:var(--acc2);box-shadow:0 4px 14px rgba(217,107,58,.3);
+       transform:translateY(-1px)}
+  .btn:active:not(:disabled){transform:translateY(0);box-shadow:0 1px 4px rgba(217,107,58,.2)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--fg);box-shadow:none;border:1px solid var(--line)}
+  .btn.ghost:hover:not(:disabled){border-color:var(--acc);color:var(--acc);background:var(--acc-light)}
+  .btn.stop{background:transparent;color:var(--err);box-shadow:none;border:1px solid var(--err);padding:11px 18px}
+  .btn.stop:hover:not(:disabled){background:var(--err);color:#fff}
+
+  .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{background:transparent;color:var(--mut);border:0;padding:9px 18px;cursor:pointer;
+       font:inherit;font-weight:500;transition:all .2s}
+  .seg button:hover{color:var(--fg)}
+  .seg button.on{background:var(--fg);color:#fff}
+
+  .mchips{display:flex;gap:10px;flex-wrap:wrap}
+  .mchip{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+         border-radius:10px;padding:8px 14px;cursor:pointer;user-select:none;font-weight:500;
+         transition:all .2s;box-shadow:var(--shadow-sm)}
+  .mchip:hover{border-color:var(--teal);background:rgba(42,143,143,.04)}
+  .mchip.off{opacity:.4}
+  .mchip .dot{width:9px;height:9px;border-radius:50%;background:var(--err);transition:all .3s}
+  .mchip.ready .dot{background:var(--ok);box-shadow:0 0 0 3px rgba(61,154,110,.15)}
+
+  .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+
+  .col{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+       display:flex;flex-direction:column;box-shadow:var(--shadow-sm);
+       transition:box-shadow .3s,transform .3s;animation:fadeUp .4s ease-out both}
+  .col:nth-child(2){animation-delay:.08s}
+  .col:nth-child(3){animation-delay:.16s}
+  .col:hover{box-shadow:var(--shadow-lg);transform:translateY(-3px)}
+  .col h3{margin:0;padding:14px 16px;font-size:14px;font-weight:700;letter-spacing:.2px;
+          border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;
+          position:relative}
+  .col:nth-child(1) h3{border-left:3px solid var(--acc)}
+  .col:nth-child(2) h3{border-left:3px solid var(--teal)}
+  .col:nth-child(3) h3{border-left:3px solid var(--plum)}
+  .col .usedPrompt{padding:10px 16px;font-size:12px;color:var(--mut);border-bottom:1px solid var(--line);
+          background:var(--panel2);line-height:1.5;max-height:76px;overflow:auto;
+          white-space:pre-wrap;word-break:break-word}
+  .col .body{padding:14px 16px;min-height:180px;display:flex;flex-direction:column;gap:10px;justify-content:center}
+  .media{width:100%;border-radius:10px;background:#1a1a1a}
+  .media.clickable{cursor:zoom-in;transition:transform .2s,box-shadow .2s}
+  .media.clickable:hover{transform:scale(1.02);box-shadow:var(--shadow-md)}
+  .status{color:var(--mut);font-size:13px;text-align:center;font-weight:500}
+  .status.err{color:var(--err);font-weight:600}
+  .meta{color:var(--mut);font-size:12px;display:flex;justify-content:space-between;font-weight:500;
+        padding-top:6px;border-top:1px solid var(--line);margin-top:4px}
+
+  .spin{width:24px;height:24px;border:3px solid var(--line);border-top-color:var(--acc);
+        border-radius:50%;animation:sp .9s linear infinite;margin:6px auto}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+  details.setup summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;transition:color .2s}
+  details.setup summary:hover{color:var(--acc)}
+  .setup-cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:12px}
+  .scard{background:var(--panel2);border:1px dashed var(--line);border-radius:12px;padding:14px 16px;
+       transition:all .2s}
+  .scard:hover{border-color:var(--teal);box-shadow:var(--shadow-sm)}
+  .scard b{font-size:14px;font-weight:600}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;margin-left:6px;font-weight:600}
+  .tag.ok{background:rgba(61,154,110,.1);color:var(--ok)}
+  .tag.no{background:rgba(201,74,74,.08);color:var(--err)}
+  .scard .drop{margin-top:8px;border:1px dashed var(--line);border-radius:10px;padding:12px;
+       text-align:center;color:var(--mut);font-size:12px;cursor:pointer;transition:all .2s}
+  .scard .drop:hover{border-color:var(--teal);color:var(--teal);background:rgba(42,143,143,.04)}
+  .scard .drop.hi{border-color:var(--acc);color:var(--acc);background:var(--acc-light)}
+  code{background:var(--panel2);padding:2px 7px;border-radius:6px;font-size:12.5px;border:1px solid var(--line)}
+  a{color:var(--teal);font-weight:500;transition:color .15s}
+  a:hover{color:#1f7070}
+
+  .info-panel{margin-top:32px}
+  .info-panel summary{font-size:16px;font-weight:700;cursor:pointer;padding:14px 0;color:var(--fg);
+    list-style:none;display:flex;align-items:center;gap:8px}
+  .info-panel summary::before{content:'▶';font-size:11px;transition:transform .2s;display:inline-block}
+  .info-panel[open] summary::before{transform:rotate(90deg)}
+  .info-panel .info-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));margin-top:8px}
+  .info-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+    box-shadow:var(--shadow-sm)}
+  .info-card h4{margin:0 0 10px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .info-card .badge{font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600}
+  .badge.video{background:rgba(42,143,143,.1);color:var(--teal)}
+  .badge.image{background:rgba(217,107,58,.1);color:var(--acc)}
+  .info-card table{width:100%;font-size:12.5px;border-collapse:collapse}
+  .info-card td{padding:4px 0;border-bottom:1px solid var(--line)}
+  .info-card td:first-child{color:var(--mut);width:40%}
+  .info-card td:last-child{font-weight:500;text-align:right}
+  .info-card tr:last-child td{border-bottom:none}
+  .info-note{font-size:12px;color:var(--mut);margin-top:10px;line-height:1.5;padding:10px 14px;
+    background:var(--panel2);border-radius:8px}
+  .tip-section{margin-top:16px}
+  .tip-section h4{margin:0 0 8px;font-size:14px;font-weight:700}
+  .tip-section ul{margin:0;padding-left:20px;font-size:13px;line-height:1.8;color:var(--fg)}
+  .tip-section li::marker{color:var(--acc)}
+</style>
+</head>
+<body>
+<header>
+  <div class="hero-banner"></div>
+  <div class="hero-bar">
+    <div class="hw">
+      <h1>模型比較</h1>
+      <div class="sub">同一個 prompt · 影片：LTX-2.5 / H3 / Wan · 圖片：FLUX.2 / Qwen / HiDream · 本機 ComfyUI</div>
+    </div>
+  </div>
+</header>
+<main>
+
+  <!-- 設定：匯入 workflow -->
+  <details class="setup card" id="setup">
+    <summary>⚙️ workflow 設定（首次使用：每個模型各設定一次）</summary>
+    <p style="color:var(--mut);font-size:13px;margin-bottom:8px">
+      <b>最簡單：</b>在 <a id="comfyLink" href="http://localhost:8188" target="_blank">ComfyUI</a> 開啟該模型的官方 Template（<i>Workflow → Browse Templates</i>）→ 按一次 <b>Run</b> →
+      回到這裡按下方 <b>🎯 從 ComfyUI 擷取</b>，即可自動抓取並辨識模型（會順手中斷該次生成）。
+      每個模型（LTX-2.5 / Wan 2.2 / MiniMax H3）各做一次。
+    </p>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 4px">
+      <button class="btn" id="capture">🎯 從 ComfyUI 擷取目前 workflow</button>
+      <span class="status" id="capHint"></span>
+    </div>
+    <p style="color:var(--mut);font-size:12px;margin:4px 0 0">
+      或用檔案：ComfyUI 開啟 <code>Enable Dev mode</code> 後 <b>Save (API Format)</b> 匯出 JSON，拖到下方卡片。
+    </p>
+    <div class="setup-cards" id="setupCards"></div>
+  </details>
+
+  <!-- 控制列 -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <label>Prompt（三個模型共用）</label>
+      <button class="btn ghost" id="randPrompt" title="隨機產生 prompt">🎲 Random</button>
+    </div>
+    <div style="font-size:12px;color:var(--mut);margin-bottom:6px;line-height:1.5">
+      描述你想生成的畫面。建議包含：<b>主體</b>（人物/物體）、<b>動作</b>、<b>場景</b>、<b>光線</b>、<b>風格</b>。英文效果較佳。點 🎲 Random 可自動組合豐富的提示詞。
+    </div>
+    <textarea id="prompt" placeholder="例：A red fox running through a snowy forest at sunrise, cinematic"></textarea>
+    <div class="row" style="margin-top:12px">
+      <div class="seed">
+        <label>Seed</label>
+        <div style="font-size:11px;color:var(--mut);margin-bottom:4px;line-height:1.4">
+          相同 Seed + Prompt = 相同結果，方便跨模型公平比較
+        </div>
+        <div style="display:flex;gap:8px">
+          <input type="number" id="seed">
+          <button class="btn ghost" id="dice" title="隨機">🎲</button>
+        </div>
+      </div>
+      <div>
+        <label>解析度</label>
+        <select id="resSel"></select>
+      </div>
+      <div>
+        <label>輸出形式</label>
+        <div class="seg" id="typeSeg">
+          <button data-t="image">🖼️ 圖片</button>
+          <button data-t="video" class="on">🎞️ 影片</button>
+        </div>
+      </div>
+      <div style="flex:2">
+        <label>要比較的模型</label>
+        <div class="mchips" id="mchips"></div>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:12px;align-items:center">
+      <button class="btn" id="go">▶ 一次生成並比較</button>
+      <button class="btn stop" id="stopAll">■ 停止全部</button>
+      <span class="status" id="hint"></span>
+    </div>
+  </div>
+
+  <!-- 說明面板 -->
+  <details class="info-panel card">
+    <summary>📋 模型規格與使用說明</summary>
+
+    <div class="info-grid">
+      <!-- 影片模型 -->
+      <div class="info-card">
+        <h4>LTX-2.5 <span class="badge video">影片</span></h4>
+        <table>
+          <tr><td>參數量</td><td>22B</td></tr>
+          <tr><td>精度</td><td>FP8</td></tr>
+          <tr><td>VRAM 用量</td><td>~22 GB</td></tr>
+          <tr><td>HD 速度</td><td>~144s / 5s 影片</td></tr>
+          <tr><td>優化</td><td>FP8 權重</td></tr>
+          <tr><td>授權</td><td>Apache 2.0</td></tr>
+        </table>
+      </div>
+      <div class="info-card">
+        <h4>MiniMax H3 <span class="badge video">影片</span></h4>
+        <table>
+          <tr><td>參數量</td><td>~20B</td></tr>
+          <tr><td>精度</td><td>NVFP4 混合</td></tr>
+          <tr><td>VRAM 用量</td><td>~19 GB</td></tr>
+          <tr><td>HD 速度</td><td>~298s / 5s 影片</td></tr>
+          <tr><td>優化</td><td>NVFP4 + Sol-Attn + FBC + TeaCache</td></tr>
+          <tr><td>授權</td><td>MiniMax 開放</td></tr>
+        </table>
+        <div class="info-note">⚠️ 2K 以上解析度不建議 — Sol-Attn 在高 token 數下可能產生網格偽影，全量 attention 則 OOM。</div>
+      </div>
+      <div class="info-card">
+        <h4>Wan 2.2 <span class="badge video">影片</span></h4>
+        <table>
+          <tr><td>參數量</td><td>14B</td></tr>
+          <tr><td>精度</td><td>FP8</td></tr>
+          <tr><td>VRAM 用量</td><td>~14 GB</td></tr>
+          <tr><td>HD 速度</td><td>待測</td></tr>
+          <tr><td>優化</td><td>FP8 權重</td></tr>
+          <tr><td>授權</td><td>Apache 2.0</td></tr>
+        </table>
+      </div>
+
+      <!-- 圖片模型 -->
+      <div class="info-card">
+        <h4>FLUX.2 Dev <span class="badge image">圖片</span></h4>
+        <table>
+          <tr><td>參數量</td><td>32B</td></tr>
+          <tr><td>精度</td><td>NVFP4 混合</td></tr>
+          <tr><td>VRAM 用量</td><td>~23 GB</td></tr>
+          <tr><td>步數</td><td>10</td></tr>
+          <tr><td>文字編碼器</td><td>Mistral 3 Small</td></tr>
+          <tr><td>最大解析度</td><td>4MP (2048×2048)</td></tr>
+          <tr><td>授權</td><td>Apache 2.0</td></tr>
+        </table>
+      </div>
+      <div class="info-card">
+        <h4>Qwen-Image 2512 <span class="badge image">圖片</span></h4>
+        <table>
+          <tr><td>參數量</td><td>20B</td></tr>
+          <tr><td>精度</td><td>FP8</td></tr>
+          <tr><td>VRAM 用量</td><td>~20 GB</td></tr>
+          <tr><td>步數</td><td>30 (CFG=1)</td></tr>
+          <tr><td>文字編碼器</td><td>Qwen2.5-VL 7B</td></tr>
+          <tr><td>最佳解析度</td><td>1024² ~ 1664×928</td></tr>
+          <tr><td>授權</td><td>Apache 2.0</td></tr>
+        </table>
+      </div>
+      <div class="info-card">
+        <h4>HiDream-I1 Dev <span class="badge image">圖片</span></h4>
+        <table>
+          <tr><td>參數量</td><td>17B</td></tr>
+          <tr><td>精度</td><td>FP8</td></tr>
+          <tr><td>VRAM 用量</td><td>~16 GB</td></tr>
+          <tr><td>步數</td><td>20 (LCM, CFG=1)</td></tr>
+          <tr><td>文字編碼器</td><td>CLIP×2 + T5 + LLaMA 8B</td></tr>
+          <tr><td>訓練解析度</td><td>1024×1024</td></tr>
+          <tr><td>授權</td><td>MIT</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- 解析度建議 -->
+    <div class="tip-section">
+      <h4>📐 解析度建議</h4>
+      <ul>
+        <li><b>影片</b>：HD (1376×768) 為最佳性價比；FHD (1920×1080) 品質更好但耗時加倍；2K 僅建議 LTX 使用</li>
+        <li><b>圖片</b>：1024×1024 為通用安全值；FLUX.2 支援最高 2048×2048；Qwen 最佳比例為 1328×1328 或 1664×928</li>
+      </ul>
+    </div>
+
+    <!-- 操作提示 -->
+    <div class="tip-section">
+      <h4>💡 使用技巧</h4>
+      <ul>
+        <li>首次使用需先在上方「workflow 設定」匯入各模型的 ComfyUI workflow</li>
+        <li>🎲 Random 會自動生成含角色、場景、光線、攝影風格的豐富提示詞</li>
+        <li>同一個 Seed + 相同 Prompt 可在不同模型間做公平比較</li>
+        <li>點擊生成的圖片可在新分頁開啟原圖檢視</li>
+        <li>輸出右下角顯示生成耗時與當前 VRAM 使用量</li>
+        <li>一次只跑一個模型可降低記憶體壓力，避免 OOM</li>
+      </ul>
+    </div>
+
+    <!-- 硬體資訊 -->
+    <div class="tip-section">
+      <h4>🖥️ 硬體環境</h4>
+      <ul>
+        <li><b>GPU</b>：NVIDIA GB10 (Blackwell) — 128GB 統一記憶體</li>
+        <li><b>CUDA</b>：13.0 · Driver 580.173</li>
+        <li><b>ComfyUI</b>：最新版 + ComfyUI-Manager · 綁定 localhost:8188</li>
+        <li><b>量化格式</b>：NVFP4（Blackwell 原生）· FP8 · INT8 按模型選用</li>
+      </ul>
+    </div>
+  </details>
+
+  <!-- 結果 -->
+  <div class="grid" id="grid"></div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+let STATE = {}, ORDER = ["ltx","wan","h3","flux2","qwen","hidream"], LABELS = {}, otype = "video";
+const VIDEO_MODELS = ["ltx","h3","wan"];
+const IMAGE_MODELS = ["flux2","qwen","hidream"];
+const selected = new Set(["ltx","h3"]);
+
+async function loadState(){
+  const r = await fetch("/api/models"); const d = await r.json();
+  STATE = d.models; ORDER = d.order; LABELS = d.labels;
+  if (d.comfy) $("#comfyLink").href = d.comfy;
+  renderSetup(); renderChips();
+}
+
+function renderSetup(){
+  const wrap = $("#setupCards"); wrap.innerHTML = "";
+  ORDER.forEach(m=>{
+    const s = STATE[m];
+    const badge = t => s[t] ? `<span class="tag ok">${t} ✓</span>` : `<span class="tag no">${t} ✗</span>`;
+    const el = document.createElement("div");
+    el.className = "scard";
+    el.innerHTML = `<b>${s.label}</b> ${badge("image")} ${badge("video")}
+      <div class="drop" data-m="${m}">拖入 API workflow JSON<br>或點此選檔</div>`;
+    wrap.appendChild(el);
+    const drop = el.querySelector(".drop");
+    drop.addEventListener("click",()=>pickFile(m));
+    drop.addEventListener("dragover",e=>{e.preventDefault();drop.classList.add("hi")});
+    drop.addEventListener("dragleave",()=>drop.classList.remove("hi"));
+    drop.addEventListener("drop",e=>{e.preventDefault();drop.classList.remove("hi");
+      if(e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]);});
+  });
+}
+
+function renderChips(){
+  const wrap = $("#mchips"); wrap.innerHTML = "";
+  const pool = otype==="video" ? VIDEO_MODELS : IMAGE_MODELS;
+  pool.forEach(m=>{
+    const ready = !!(STATE[m] && STATE[m][otype]);
+    const on = selected.has(m);
+    const el = document.createElement("div");
+    el.className = "mchip"+(ready?" ready":"")+(on?"":" off");
+    el.innerHTML = `<span class="dot"></span>${LABELS[m]||m}`;
+    el.title = ready ? "已可比較" : `尚未匯入「${otype}」workflow`;
+    el.onclick = ()=>{ on?selected.delete(m):selected.add(m); renderChips(); };
+    wrap.appendChild(el);
+  });
+}
+
+function pickFile(m){
+  const i=document.createElement("input"); i.type="file"; i.accept=".json,application/json";
+  i.onchange=()=>i.files[0]&&upload(i.files[0]); i.click();
+}
+async function upload(file){
+  const fd=new FormData(); fd.append("file",file);
+  $("#hint").textContent="匯入中…";
+  const r=await fetch("/api/import",{method:"POST",body:fd});
+  const d=await r.json();
+  if(d.error){ $("#hint").innerHTML=`<span class="err">匯入失敗：${d.error}</span>`; return; }
+  STATE=d.state;
+  $("#hint").textContent=`已匯入：${d.label} · ${d.type}` + (d.prompt_ok?"（已找到提示詞節點）":"（未找到提示詞節點，請在 workflow 內把正向提示詞設為 __PROMPT__）");
+  renderSetup(); renderChips();
+}
+
+// 輸出形式切換
+$("#typeSeg").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{ otype=b.dataset.t;
+    $("#typeSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    selected.clear();
+    if(otype==="video"){ selected.add("ltx"); selected.add("h3"); }
+    else { selected.add("flux2"); selected.add("qwen"); selected.add("hidream"); }
+    updateRes(); renderChips(); };
+});
+const RES_VIDEO = [["860x480","860×480 (SD)"],["1376x768","1376×768 (HD)",true],["1920x1080","1920×1080 (FHD)"],["2560x1440","2560×1440 (2K)"]];
+const RES_IMAGE = [["1024x1024","1024×1024 (1:1)",true],["1152x896","1152×896 (4:3)"],["896x1152","896×1152 (3:4)"],["1344x768","1344×768 (16:9)"],["768x1344","768×1344 (9:16)"]];
+function updateRes(){
+  const sel=$("#resSel"); sel.innerHTML="";
+  (otype==="video"?RES_VIDEO:RES_IMAGE).forEach(([v,t,d])=>{
+    const o=document.createElement("option"); o.value=v; o.textContent=t; if(d) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+updateRes();
+function newSeed(){ $("#seed").value=Math.floor(Math.random()*1e9); }
+newSeed();
+$("#dice").onclick=newSeed;
+
+const R=a=>a[Math.random()*a.length|0];
+const Rn=(a,n)=>{const s=a.slice();for(let i=s.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[s[i],s[j]]=[s[j],s[i]]}return s.slice(0,n)};
+
+const CHAR_BASE=[
+  "a young woman in her late 20s with long wavy auburn hair, freckled skin, wearing a tailored charcoal wool coat over a cream turtleneck",
+  "an elderly man with deep laugh lines, silver beard, weathered hands, wearing a faded indigo linen shirt with rolled sleeves",
+  "a teenage boy with close-cropped black hair, warm brown skin, wearing an oversized vintage denim jacket covered in enamel pins",
+  "a middle-aged woman with a sharp bob haircut, olive complexion, wire-rimmed glasses, wearing a structured burgundy blazer",
+  "a tall man in his 30s with tousled dark curls, stubble jaw, wearing a worn leather bomber jacket over a plain white tee",
+  "a little girl around 6 years old with twin braids, missing front tooth, bright yellow rain boots and a polka-dot umbrella",
+  "a dancer with lean muscular build, slicked-back hair, high cheekbones, wearing a flowing silk chiffon dress that catches the wind",
+  "an old fisherman with sun-creased eyes, salt-and-pepper stubble, thick knit sweater, holding a hand-carved wooden pipe",
+  "a street musician with dreadlocks past the shoulders, warm smile, fingerless gloves, holding a battered acoustic guitar",
+  "a scientist in her 40s with reading glasses pushed up on her forehead, messy bun, lab coat slightly stained with ink",
+  "a chef with forearm tattoos visible below rolled sleeves, confident stance, crisp white double-breasted jacket",
+  "twin sisters in matching hand-knit scarves, one with a shy smile looking down, the other grinning directly at camera"
+];
+const CHAR_ACT_VIDEO=[
+  "walking slowly and looking over their shoulder","turning to face the camera with a subtle smile",
+  "running through the rain, coat flaring behind them","sitting on a bench reading a worn paperback, pages fluttering",
+  "leaning against a railing gazing at the horizon","dancing alone with eyes closed, arms outstretched",
+  "climbing stone steps two at a time","crouching to pet a stray cat",
+  "standing motionless as crowds blur past in long-exposure style","laughing mid-conversation, gesturing with both hands",
+  "sprinting across a rooftop and leaping to the next building","pouring tea carefully into a ceramic cup, steam curling upward",
+  "adjusting their collar in a shop window reflection","stepping off a train onto a foggy platform",
+  "lighting a match in the dark, face illuminated for a moment","picking up a fallen photograph from the ground",
+  "pushing through a heavy wooden door into bright light","catching a thrown apple with one hand without looking",
+  "exhaling visible breath into cold air, hands in pockets","sketching in a notebook, glancing up at the scene periodically",
+  "wading knee-deep through a shallow stream","tying their hair back before breaking into a run",
+  "unlocking a bicycle and riding away down a cobblestone street","kneeling to tie a child's shoelace",
+  "shielding their eyes from sudden sunlight","standing at a crosswalk waiting, tapping foot impatiently",
+  "removing glasses and rubbing tired eyes","pulling a suitcase through an empty airport terminal at dawn",
+  "spinning an umbrella open as the first drops of rain fall","reaching up to pick fruit from a low-hanging branch"
+];
+const NONHUMAN_POOL=[
+  {s:"a red fox",a:["darting through tall grass","pausing mid-stride with ears pricked","leaping over a fallen log"]},
+  {s:"a snow leopard",a:["prowling along a rocky ledge","crouching low, tail curling","bounding silently through deep snow"]},
+  {s:"a golden eagle",a:["soaring above clouds with wings fully spread","diving at speed toward the ground","perched on a dead tree, scanning the valley"]},
+  {s:"a wolf pack",a:["running in formation across open terrain","howling together at twilight","crossing a frozen river in single file"]},
+  {s:"a humpback whale",a:["breaching the ocean surface, water cascading off its body","gliding slowly through deep blue water","surfacing to exhale a plume of mist"]},
+  {s:"a wild mustang herd",a:["galloping across a salt flat, dust billowing","drinking at a desert watering hole","stampeding through a shallow river"]},
+  {s:"a jellyfish swarm",a:["pulsing rhythmically through dark water","drifting upward toward surface light","trailing luminous tentacles in the current"]},
+  {s:"an ancient dragon",a:["coiling around a mountain peak","breathing fire into a stormy sky","landing heavily on a stone ruin, wings folding"]},
+  {s:"a mechanical owl with brass gears",a:["hovering silently, gears clicking softly","tilting its head, eyes glowing amber","taking flight from a clock tower"]},
+  {s:"a bioluminescent deep-sea creature",a:["drifting through pitch-black water, glowing softly","pulsing light patterns along its body","emerging from a volcanic vent on the ocean floor"]},
+  {s:"a steam-powered locomotive",a:["cutting through heavy fog, headlight blazing","rounding a mountain curve, sparks flying","pulling into a snow-covered station, steam billowing"]},
+  {s:"a vintage 1960s convertible",a:["cruising a coastal highway at sunset","idling at a rain-soaked intersection, wipers on","parked under a streetlight, chrome gleaming"]},
+  {s:"a weathered wooden sailing ship",a:["sailing into a crimson sunset","battling through towering storm waves","anchored in a calm bay, lanterns glowing on deck"]},
+  {s:"a crumbling Gothic cathedral",a:["standing against a dramatic sky as lightning strikes","slowly being reclaimed by vines and moss","lit from within by hundreds of candles"]},
+  {s:"a floating island with waterfalls",a:["drifting through clouds, waterfalls pouring off every edge","rotating slowly to reveal hidden gardens","casting a vast shadow over the landscape below"]}
+];
+const ENV=[
+  "a rain-soaked Tokyo alley at 2 AM, neon kanji reflections on wet asphalt",
+  "a vast Icelandic black-sand beach under the aurora borealis",
+  "a sun-drenched Tuscan vineyard at golden hour, rows of grapevines receding to the hills",
+  "the interior of an abandoned Art Deco cinema, dust motes in a shaft of light from a broken skylight",
+  "a misty bamboo forest at dawn, shafts of pale green light filtering through",
+  "a brutalist concrete overpass during a thunderstorm, headlights streaking past",
+  "a snow-covered Swiss alpine village, warm amber light glowing from chalet windows",
+  "a bustling Moroccan souk, spice pyramids and dyed fabrics filling the frame",
+  "the deck of a cargo ship at dusk, endless steel-gray ocean to the horizon",
+  "a neon-drenched cyberpunk marketplace, holographic ads and steam vents",
+  "a sunlit Mediterranean cliff-side path, bougainvillea spilling over white walls",
+  "the control room of a decommissioned nuclear plant, banks of analog gauges and warning lights",
+  "a cherry-blossom-lined canal in Kyoto, petals drifting on still water",
+  "a red-rock desert canyon at magic hour, long shadows and warm sandstone glow",
+  "a rooftop garden above a skyline at twilight, string lights and potted olive trees",
+  "the interior of a grand old library, leather-bound volumes floor to ceiling, green reading lamps",
+  "an underwater coral reef teeming with tropical fish, dappled caustic light from above",
+  "a foggy London bridge at dawn, silhouettes of lampposts fading into grey"
+];
+const CAM_VIDEO=[
+  "handheld tracking shot following the subject","slow dolly-in to a close-up",
+  "wide establishing shot, 24mm anamorphic lens","low-angle hero shot, lens tilted up",
+  "overhead crane descending into the scene","steady medium shot, 50mm prime, f/1.4 bokeh",
+  "whip pan revealing the environment","Steadicam orbiting 360° around the subject",
+  "extreme close-up on eyes, catching light","Dutch angle with dramatic foreshortening",
+  "pull-focus rack from foreground detail to subject","static locked-off frame, subject enters from left"
+];
+const CAM_IMAGE=[
+  "wide-angle 24mm photograph with deep depth of field","85mm portrait lens, f/1.4, creamy bokeh",
+  "extreme close-up macro detail shot","low-angle looking up, dramatic perspective",
+  "overhead flat-lay composition","medium shot framed through a doorway",
+  "35mm street photography, candid moment","telephoto compression, 200mm, stacked layers",
+  "square format, centered symmetrical composition","environmental portrait, subject small in vast landscape"
+];
+const LIGHT=[
+  "golden hour backlight with warm rim light on hair","overcast soft diffused key, no hard shadows",
+  "single hard top-light creating deep contrast and chiaroscuro","neon practicals casting cyan and magenta on wet surfaces",
+  "candlelight warmth, flickering soft shadows","cool blue moonlight with fog diffusion",
+  "harsh noon sun, sharp shadow under brow","studio three-point setup, clean separation from background",
+  "volumetric god-rays breaking through dust","firelight from below casting dramatic upward shadows",
+  "mixed color temperature: warm interior vs cool exterior through window","overexposed backlight creating silhouette with lens flare"
+];
+const STYLE=[
+  "cinematic film grain, 35mm Kodak Vision3 500T stock","hyper-realistic, photojournalistic feel",
+  "painterly chiaroscuro, Caravaggio-inspired tonality","clean editorial fashion photography, Vogue aesthetic",
+  "desaturated muted palette, Andrei Tarkovsky atmosphere","high-contrast black and white, Tri-X 400 pushed two stops",
+  "vibrant saturated colors, Wes Anderson symmetry","gritty handheld documentary realism, available light only",
+  "dreamlike soft focus with halation on highlights","neo-noir with deep blacks and isolated color accents",
+  "anamorphic widescreen with oval bokeh and subtle barrel distortion","matte painting quality, epic scope"
+];
+const ENV_AUDIO={
+  "rain-soaked Tokyo":"Sound: gentle rain on pavement, neon sign buzzing, footsteps splashing through puddles, distant train rumble",
+  "Icelandic black-sand":"Sound: howling arctic wind, waves crashing on volcanic rock, gravel crunching underfoot",
+  "Tuscan vineyard":"Sound: warm breeze rustling grapevine leaves, distant church bells, cicadas chirping",
+  "abandoned Art Deco cinema":"Sound: hollow echo of footsteps, distant dripping water, creaking old seats, dust settling",
+  "misty bamboo":"Sound: wind through bamboo creating hollow percussion, birdsong, a stream trickling over stones",
+  "brutalist concrete overpass":"Sound: heavy rain on concrete, traffic roaring past, thunder echoing off walls",
+  "Swiss alpine village":"Sound: cowbells in the distance, crunching snow underfoot, muffled laughter from a warm chalet",
+  "Moroccan souk":"Sound: bustling crowd murmur, merchants calling, clinking metal teapots, distant oud music",
+  "cargo ship":"Sound: deep engine thrumming, waves slapping the hull, wind whipping across the deck, seagull cries",
+  "cyberpunk marketplace":"Sound: electronic bass thrum, hissing steam vents, overlapping voices in multiple languages, synth chords",
+  "Mediterranean cliff":"Sound: crashing waves far below, warm breeze, a distant motorboat, seagulls calling",
+  "nuclear plant":"Sound: mechanical whirring, steam hissing from valves, metallic clanks echoing in a vast hall, Geiger clicks",
+  "cherry-blossom":"Sound: gentle water lapping, petals landing softly, distant temple gong, wooden sandals on stone",
+  "red-rock desert":"Sound: wind howling through canyon walls, a hawk's cry overhead, grit scraping on sandstone",
+  "rooftop garden":"Sound: city traffic hum far below, wind chimes, rustling leaves, a distant saxophone",
+  "grand old library":"Sound: absolute quiet broken by pages turning, a clock ticking, soft footsteps on hardwood",
+  "underwater coral":"Sound: underwater muffled ambience, bubbles rising, distant whale song, gentle current hum",
+  "foggy London":"Sound: fog horn in the distance, Big Ben chiming faintly, footsteps on wet cobblestones, a cab passing"
+};
+function matchAudio(env){
+  for(const[k,v] of Object.entries(ENV_AUDIO)){
+    if(env.includes(k)) return v;
+  }
+  return "Sound: ambient atmosphere, subtle environmental texture, natural reverb";
+}
+
+function randPrompt(){
+  const isVideo = otype==="video";
+  const useChar = Math.random()>0.4;
+  let subj, act;
+  if(useChar){
+    subj = R(CHAR_BASE);
+    act = isVideo ? R(CHAR_ACT_VIDEO) : "";
+  } else {
+    const nh = R(NONHUMAN_POOL);
+    subj = nh.s;
+    act = isVideo ? R(nh.a) : "";
+  }
+  const env = R(ENV);
+  const light = R(LIGHT);
+  const style = R(STYLE);
+
+  let parts = [];
+  if(isVideo){
+    parts.push(`${subj}, ${act}, in ${env}`);
+    parts.push(R(CAM_VIDEO));
+    parts.push(light);
+    parts.push(style);
+    parts.push(matchAudio(env));
+  } else {
+    parts.push(useChar ? `${subj}, in ${env}` : `${subj} in ${env}`);
+    parts.push(R(CAM_IMAGE));
+    parts.push(light);
+    parts.push(style);
+  }
+  parts.push("no text, no watermark, no logo");
+  return parts.join(". ")+".";
+}
+$("#randPrompt").onclick=()=>{ $("#prompt").value=randPrompt(); };
+
+$("#capture").onclick=async()=>{
+  $("#capHint").textContent="擷取中…";
+  try{
+    const r=await fetch("/api/capture"); const d=await r.json();
+    if(d.error){ $("#capHint").innerHTML=`<span class="err">${d.error}</span>`; return; }
+    STATE=d.state;
+    $("#capHint").innerHTML=`✅ 已擷取 <b>${d.label}</b>（${d.type}）`+
+      (d.prompt_ok?"，已找到提示詞節點":'，<span class="err">未找到提示詞節點</span>');
+    renderSetup(); renderChips();
+  }catch(e){ $("#capHint").innerHTML='<span class="err">擷取失敗（ComfyUI 沒開？）</span>'; }
+};
+
+// 停止
+$("#stopAll").onclick=async()=>{
+  try{
+    await fetch("/api/stop",{method:"POST"});
+    $("#hint").innerHTML='<span class="ok">已停止所有任務</span>';
+  }catch(e){ $("#hint").innerHTML='<span class="err">停止失敗</span>'; }
+};
+
+// 生成
+$("#go").onclick=async()=>{
+  const prompt=$("#prompt").value.trim();
+  if(!prompt){ $("#hint").innerHTML='<span class="err">請先輸入 prompt</span>'; return; }
+  const models=ORDER.filter(m=>selected.has(m));
+  if(!models.length){ $("#hint").innerHTML='<span class="err">請至少選一個模型</span>'; return; }
+  const seed=parseInt($("#seed").value||"0",10);
+  newSeed();
+  $("#go").disabled=true; $("#hint").textContent="送出中…";
+  // 先擺好欄位
+  const grid=$("#grid"); grid.innerHTML="";
+  const cols={};
+  const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  models.forEach(m=>{
+    const c=document.createElement("div"); c.className="col";
+    c.innerHTML=`<h3>${LABELS[m]}<span class="meta" style="font-size:11px">seed ${seed}</span></h3>
+      <div class="usedPrompt" title="${esc(prompt)}">📝 ${esc(prompt)}</div>
+      <div class="body"><div class="spin"></div><div class="status">排隊中…</div></div>`;
+    grid.appendChild(c); cols[m]=c;
+  });
+  const r=await fetch("/api/generate",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt,seed,type:otype,models,resolution:$("#resSel").value})});
+  const d=await r.json();
+  $("#go").disabled=false; $("#hint").textContent="";
+  if(d.error){ $("#hint").innerHTML=`<span class="err">${d.error}</span>`; return; }
+  for(const m of models){
+    const res=d.results[m], body=cols[m].querySelector(".body");
+    if(!res||res.error){ body.innerHTML=`<div class="status err">${res?res.error:"無回應"}</div>`; continue; }
+    if(res.tokens){
+      const t=res.tokens, mark=t.temporal_confirmed?"":"~";
+      const tk=document.createElement("div"); tk.className="usedPrompt";
+      tk.textContent=`🧮 ${t.width}×${t.height} · ${t.frames}格${t.fps?`@${t.fps}fps`:""} · ${mark}${t.tokens.toLocaleString()} tokens`;
+      cols[m].querySelector(".usedPrompt").after(tk);
+    }
+    poll(m, res.prompt_id, cols[m], null);
+  }
+};
+
+async function poll(m, pid, col, t0){
+  const body=col.querySelector(".body");
+  try{
+    const r=await fetch("/api/status?id="+encodeURIComponent(pid));
+    const d=await r.json();
+    if(d.state==="queued"){
+      body.innerHTML=`<div class="spin"></div><div class="status">排隊中…</div>`;
+      setTimeout(()=>poll(m,pid,col,null),1500); return;
+    }
+    if(!t0) t0=Date.now();
+    const secs=((Date.now()-t0)/1000).toFixed(0);
+    if(d.state==="running"){
+      body.innerHTML=`<div class="spin"></div><div class="status">生成中… ${secs}s</div>`;
+      setTimeout(()=>poll(m,pid,col,t0),1500); return;
+    }
+    if(d.state==="error"){ body.innerHTML=`<div class="status err">${d.error||"生成失敗"}</div>`; return; }
+    if(d.state==="done"){
+      const took=((Date.now()-t0)/1000).toFixed(1);
+      if(!d.media||!d.media.length){ body.innerHTML=`<div class="status">完成，但沒有輸出檔（${took}s）</div>`; return; }
+      body.innerHTML="";
+      d.media.forEach(mm=>{
+        const url=`/api/view?filename=${encodeURIComponent(mm.filename)}&subfolder=${encodeURIComponent(mm.subfolder)}&type=${encodeURIComponent(mm.type)}`;
+        if(mm.kind==="video"){
+          const v=document.createElement("video");
+          v.className="media"; v.src=url; v.controls=true; v.autoplay=true; v.loop=true; v.muted=true; v.playsInline=true;
+          body.appendChild(v);
+        }else{
+          const im=document.createElement("img"); im.className="media clickable"; im.src=url;
+          im.title="點擊開啟原圖";
+          im.addEventListener("click",()=>window.open(url,"_blank"));
+          body.appendChild(im);
+        }
+      });
+      const meta=document.createElement("div"); meta.className="meta";
+      const vram=d.vram_gb?`<span>💾 ${d.vram_gb} GB</span>`:"";
+      meta.innerHTML=`<span>⏱️ ${took}s</span>${vram}`;
+      body.appendChild(meta);
+    }
+  }catch(e){ setTimeout(()=>poll(m,pid,col,t0),2000); }
+}
+
+loadState();
+</script>
+</body>
+</html>

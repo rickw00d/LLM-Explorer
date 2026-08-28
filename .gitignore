@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+comfyui-env/
+
+# ComfyUI runtime
+comfyui/ComfyUI/
+comfyui/comfyui-env/
+comfyui/*.log
+
+# Model weights (too large for git)
+*.safetensors
+*.gguf
+*.bin
+*.pt
+*.pth
+*.ckpt
+
+# Temp & OS
+.DS_Store
+*.tmp
+/tmp/
+
+# Logs
+*.log
+nohup.out
+
+# PID files
+*.pid
+
+# Claude settings
+.claude/

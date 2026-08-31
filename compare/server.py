@@ -13,7 +13,7 @@
 
 啟動： python3 server.py  （預設 127.0.0.1:8890，僅本機）
 """
-import json, os, uuid, urllib.request, urllib.parse, urllib.error, http.server, socketserver, cgi, re
+import json, os, uuid, hmac, urllib.request, urllib.parse, urllib.error, http.server, socketserver, cgi, re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WF_DIR = os.path.join(HERE, "workflows")
@@ -23,6 +23,29 @@ COMFY = os.environ.get("COMFY_URL", "http://127.0.0.1:8188")
 HOST = os.environ.get("COMPARE_HOST", "127.0.0.1")
 PORT = int(os.environ.get("COMPARE_PORT", "8890"))
 CLIENT_ID = str(uuid.uuid4())
+
+# ---------- 對外模式（公開存取）----------
+# 設了 COMPARE_TOKEN 即進入「對外模式」：
+#   1. 所有 /api/* 需帶 X-Compare-Token 標頭
+#   2. 管理端點（會寫檔／可塞任意 workflow 進 ComfyUI）一律封鎖
+#   3. 解析度白名單、佇列上限、模型數上限
+# 沒設 token = 本機模式，行為與過去完全相同。
+TOKEN = os.environ.get("COMPARE_TOKEN", "").strip()
+PUBLIC = bool(TOKEN)
+ADMIN_OK = os.environ.get("COMPARE_ADMIN", "") == "1"
+MAX_PENDING = int(os.environ.get("COMPARE_MAX_PENDING", "8"))
+MAX_MODELS = int(os.environ.get("COMPARE_MAX_MODELS", "3"))
+MAX_PROMPT = int(os.environ.get("COMPARE_MAX_PROMPT", "2000"))
+
+# 對外模式允許的解析度（2K 以上不開放：H3 在高 token 數下會產生偽影或 OOM）
+ALLOWED_RES = {
+    "video": {"860x480", "1376x768", "1920x1080"},
+    "image": {"1024x1024", "1152x896", "896x1152", "1344x768", "768x1344"},
+}
+
+# 這些端點會寫入檔案或讓人塞任意 workflow 進 ComfyUI（＝可讀寫本機任意路徑），
+# 對外模式預設全部封鎖，除非明確設定 COMPARE_ADMIN=1。
+ADMIN_PATHS = {"/api/import", "/api/savewf", "/api/capture", "/api/uitpl", "/api/stop"}
 
 # ComfyUI 內建 workflow 範本目錄（server 跑在 comfyui venv 下即可 import 到）
 try:
@@ -359,8 +382,23 @@ class H(http.server.BaseHTTPRequestHandler):
     def log_message(self, *a):  # 安靜
         pass
 
+    def _guard(self, path):
+        """對外模式的存取控制。回傳 True 代表已擋下，呼叫端應直接 return。"""
+        if not PUBLIC:
+            return False
+        if path in ADMIN_PATHS and not ADMIN_OK:
+            self._send(403, {"error": "此端點在對外模式已停用"})
+            return True
+        if path.startswith("/api/"):
+            if not hmac.compare_digest(self.headers.get("X-Compare-Token", ""), TOKEN):
+                self._send(401, {"error": "unauthorized"})
+                return True
+        return False
+
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
+        if self._guard(u.path):
+            return
         if u.path in ("/", "/index.html"):
             try:
                 html = open(os.path.join(HERE, "index.html"), "rb").read()
@@ -449,6 +487,8 @@ class H(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
+        if self._guard(u.path):
+            return
         if u.path == "/api/import":
             return self.handle_import()
         if u.path == "/api/savewf":
@@ -539,6 +579,22 @@ class H(http.server.BaseHTTPRequestHandler):
         resolution = body.get("resolution")
         if not prompt:
             return self._send(400, {"error": "請輸入 prompt"})
+        if PUBLIC:
+            if len(prompt) > MAX_PROMPT:
+                return self._send(400, {"error": f"prompt 太長（上限 {MAX_PROMPT} 字）"})
+            if len(want) > MAX_MODELS:
+                return self._send(400, {"error": f"一次最多比較 {MAX_MODELS} 個模型"})
+            if otype not in ALLOWED_RES:
+                return self._send(400, {"error": f"不支援的輸出型態：{otype}"})
+            if resolution and resolution not in ALLOWED_RES[otype]:
+                return self._send(400, {"error": f"不支援的解析度：{resolution}"})
+            try:
+                qi = comfy_get("/queue")
+                depth = len(qi.get("queue_running") or []) + len(qi.get("queue_pending") or [])
+            except Exception:
+                depth = 0
+            if depth + len(want) > MAX_PENDING:
+                return self._send(429, {"error": f"佇列已滿（{depth}/{MAX_PENDING}），請稍後再試"})
         results = {}
         for m in want:
             p = wf_path(m, otype)
@@ -570,4 +626,10 @@ class Server(socketserver.ThreadingMixIn, http.server.HTTPServer):
 if __name__ == "__main__":
     print(f">> 模型比較工具： http://{HOST}:{PORT}")
     print(f">> 連到 ComfyUI： {COMFY}")
+    if PUBLIC:
+        print(f">> 模式：對外（需 X-Compare-Token）")
+        print(f">>   管理端點：{'已開放 (COMPARE_ADMIN=1)' if ADMIN_OK else '已封鎖'}")
+        print(f">>   佇列上限 {MAX_PENDING} · 模型上限 {MAX_MODELS} · prompt {MAX_PROMPT} 字")
+    else:
+        print(f">> 模式：本機（無認證，勿對外開放）")
     Server((HOST, PORT), H).serve_forever()

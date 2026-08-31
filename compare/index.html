@@ -360,6 +360,15 @@
 </main>
 
 <script>
+// 對外模式：若瀏覽器存過 token（localStorage.compareToken），
+// 自動幫所有 /api/* 請求帶上認證標頭。本機模式不需要，留空即可。
+(()=>{const t=localStorage.getItem("compareToken");if(!t)return;
+  const of=window.fetch;
+  window.fetch=(u,o={})=>{
+    if(typeof u==="string"&&u.startsWith("/api/"))
+      o.headers={...(o.headers||{}),"X-Compare-Token":t};
+    return of(u,o);
+  };})();
 const $ = s => document.querySelector(s);
 let STATE = {}, ORDER = ["ltx","wan","h3","flux2","qwen","hidream"], LABELS = {}, otype = "video";
 const VIDEO_MODELS = ["ltx","h3","wan"];

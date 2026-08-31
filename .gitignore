@@ -29,5 +29,11 @@ nohup.out
 # PID files
 *.pid
 
+# 密鑰 —— 絕對不可進版控
+.token
+*.token
+cert.pem
+.cloudflared/
+
 # Claude settings
 .claude/

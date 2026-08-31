@@ -377,6 +377,16 @@ class H(http.server.BaseHTTPRequestHandler):
                                     "comfy": COMFY,
                                     "order": MODELS,
                                     "labels": MODEL_LABEL})
+        if u.path == "/api/queue":
+            try:
+                qi = comfy_get("/queue")
+            except Exception:
+                return self._send(200, {"ok": False})
+            running = qi.get("queue_running") or []
+            pending = qi.get("queue_pending") or []
+            return self._send(200, {"ok": True,
+                                    "running": len(running),
+                                    "pending": len(pending)})
         if u.path == "/api/status":
             q = urllib.parse.parse_qs(u.query)
             pid = q.get("id", [""])[0]

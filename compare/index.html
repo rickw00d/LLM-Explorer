@@ -680,6 +680,14 @@ async function poll(m, pid, col, t0){
   const body=col.querySelector(".body");
   try{
     const r=await fetch("/api/status?id="+encodeURIComponent(pid));
+    // 密鑰失效（例如主機端輪替過）會回 401。它是合法 JSON，不會拋例外，
+    // 若不特別處理就會落到所有 if 之外、不再排下一次輪詢，畫面永遠停在「生成中」。
+    if(r.status===401){
+      body.innerHTML=`<div class="status err">密鑰無效或已更換。<a href="#" class="reTok" style="text-decoration:underline">重新輸入</a></div>`;
+      const a=body.querySelector(".reTok");
+      if(a) a.onclick=e=>{e.preventDefault();askToken();};
+      return;
+    }
     const d=await r.json();
     if(d.state==="queued"){
       body.innerHTML=`<div class="spin"></div><div class="status">排隊中…</div>`;
@@ -725,7 +733,11 @@ async function poll(m, pid, col, t0){
       const vram=d.vram_gb?`<span>💾 ${d.vram_gb} GB</span>`:"";
       meta.innerHTML=`<span>⏱️ ${took}s</span>${vram}`;
       body.appendChild(meta);
+      return;
     }
+    // 認不得的回應：繼續輪詢而不是靜默停住。少了這一段，任何未預期的
+    // 回應形狀都會讓畫面永遠卡在「生成中」，且完全沒有線索。
+    setTimeout(()=>poll(m,pid,col,t0),2000);
   }catch(e){ setTimeout(()=>poll(m,pid,col,t0),2000); }
 }
 

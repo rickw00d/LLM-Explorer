@@ -1,8 +1,23 @@
 #!/usr/bin/env bash
+# 停止 Compare Server 和 ComfyUI
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PIDF="$SCRIPT_DIR/compare.pid"
-[[ -f "$PIDF" ]] || { echo ">> 未在執行"; exit 0; }
-PID="$(cat "$PIDF")"
-kill "$PID" 2>/dev/null && sleep 1; kill -9 "$PID" 2>/dev/null || true
-rm -f "$PIDF"; echo ">> 已停止"
+
+stop_proc() {
+  local name="$1" pidf="$2"
+  if [[ -f "$pidf" ]]; then
+    local pid; pid="$(cat "$pidf")"
+    if kill -0 "$pid" 2>/dev/null; then
+      kill "$pid" 2>/dev/null && sleep 1; kill -9 "$pid" 2>/dev/null || true
+      echo ">> $name 已停止 (PID $pid)"
+    else
+      echo ">> $name 未在執行"
+    fi
+    rm -f "$pidf"
+  else
+    echo ">> $name 未在執行"
+  fi
+}
+
+stop_proc "Compare Server" "$SCRIPT_DIR/compare.pid"
+stop_proc "ComfyUI"        "$SCRIPT_DIR/comfyui.pid"

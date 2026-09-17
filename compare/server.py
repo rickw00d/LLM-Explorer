@@ -12,15 +12,6 @@ Endpoints:
   - /api/view    : proxies ComfyUI /view so images/video stream back same-origin.
 
 Run: python3 server.py  (defaults to 127.0.0.1:8890, localhost only)
-
-模型比較工具 —— 後端（Python 標準函式庫，無額外相依）。
-  - 提供比較網頁（index.html），與 ComfyUI 同源（避免 CORS）。
-  - /api/import  ：上傳 ComfyUI「Save (API Format)」匯出的 workflow，自動辨識模型與輸出型態，
-                   並找出正向提示詞節點與 seed 節點。
-  - /api/generate：用同一個 prompt + seed，對選定的多個模型各送一次。
-  - /api/status  ：查詢生成是否完成、取得產出檔資訊。
-  - /api/view    ：代理 ComfyUI /view，把產出串回瀏覽器。
-啟動： python3 server.py （預設 127.0.0.1:8890，僅本機）
 """
 import json, os, uuid, hmac, urllib.request, urllib.parse, urllib.error, http.server, socketserver, cgi, re
 
@@ -33,14 +24,13 @@ HOST = os.environ.get("COMPARE_HOST", "127.0.0.1")
 PORT = int(os.environ.get("COMPARE_PORT", "8890"))
 CLIENT_ID = str(uuid.uuid4())
 
-# ---------- Public mode 對外模式（公開存取）----------
+# ---------- Public mode ----------
 # Setting COMPARE_TOKEN switches the server into public mode:
 #   1. every /api/* call must carry the X-Compare-Token header
 #   2. admin endpoints (they write files / can push arbitrary workflows into ComfyUI) are blocked
 #   3. resolution allow-list, queue cap and model-count cap apply
 # No token = local mode, behaving exactly as before.
-# 設了 COMPARE_TOKEN 即進入「對外模式」：所有 /api/* 需帶 X-Compare-Token 標頭、
-# 管理端點一律封鎖、套用解析度白名單與佇列/模型數上限。沒設 token 即為本機模式。
+# COMPARE_TOKEN /api/* X-Compare-Token
 TOKEN = os.environ.get("COMPARE_TOKEN", "").strip()
 PUBLIC = bool(TOKEN)
 ADMIN_OK = os.environ.get("COMPARE_ADMIN", "") == "1"
@@ -50,7 +40,7 @@ MAX_PROMPT = int(os.environ.get("COMPARE_MAX_PROMPT", "2000"))
 
 # Resolutions allowed in public mode (2K and above excluded: at high token counts H3
 # produces artefacts or runs out of memory)
-# 對外模式允許的解析度（2K 以上不開放：H3 在高 token 數下會產生偽影或 OOM）
+# 2K H3 token OOM
 ALLOWED_RES = {
     "video": {"860x480", "1376x768", "1920x1080"},
     "image": {"1024x1024", "1152x896", "896x1152", "1344x768", "768x1344"},
@@ -58,11 +48,11 @@ ALLOWED_RES = {
 
 # These endpoints write files or let a caller push an arbitrary workflow into ComfyUI
 # (i.e. read/write anywhere on this machine). Blocked in public mode unless COMPARE_ADMIN=1.
-# 這些端點會寫入檔案或讓人塞任意 workflow 進 ComfyUI，對外模式預設全部封鎖。
+# workflow ComfyUI
 ADMIN_PATHS = {"/api/import", "/api/savewf", "/api/capture", "/api/uitpl", "/api/stop"}
 
 # ComfyUI's bundled workflow template directory (importable when this server runs in the comfyui venv)
-# ComfyUI 內建 workflow 範本目錄（server 跑在 comfyui venv 下即可 import 到）
+# ComfyUI workflow server comfyui venv import
 try:
     import comfyui_workflow_templates_json as _tj
     TPL_DIR = os.path.join(os.path.dirname(_tj.__file__), "templates")
@@ -73,7 +63,7 @@ MODELS = ["ltx", "h3", "wan", "flux2", "qwen", "hidream"]
 MODEL_LABEL = {"ltx": "LTX-2.5", "wan": "Wan 2.2", "h3": "MiniMax H3",
                "flux2": "FLUX.2 Dev", "qwen": "Qwen-Image", "hidream": "HiDream-I1"}
 # Identify the model from diffusion_models / encoder filenames (most distinctive first)
-# 依 diffusion_models / encoder 檔名判斷模型（順序：先判斷較獨特的）
+# diffusion_models / encoder
 SIGNATURES = [
     ("ltx", ["ltx-2.5", "ltx2", "ltx-2", "ltx_"]),
     ("h3",  ["minimax_h3", "minimax", "hailuo", "_h3_"]),
@@ -84,7 +74,46 @@ SIGNATURES = [
 ]
 VIDEO_EXT = (".mp4", ".webm", ".gif", ".mov", ".mkv", ".m4v")
 
-# ---------- ComfyUI HTTP helpers 小工具 ----------
+# ---------- error payloads ----------
+# Errors carry a stable code plus its parameters so the web UI can render them in
+# the viewer's language (see compare/i18n.js). The English `error` sentence stays
+# in the payload for clients that do not translate (the Space frontend, curl).
+ERROR_TEXT = {
+    "UNAUTHORIZED": "Not authorised — check the access token",
+    "ENDPOINT_DISABLED": "This endpoint is disabled in public mode",
+    "NOT_A_WORKFLOW": "Not a valid workflow",
+    "UI_FORMAT": "This is the editor (UI) format; the API format is required",
+    "IMPORT_UI_FORMAT": "This is the editor (UI) format. Export it from ComfyUI with "
+                        "'Save (API Format)' and upload that file.",
+    "UNKNOWN_MODEL": "Could not identify the model",
+    "TEMPLATE_DIR_MISSING": "Template directory not found",
+    "COMFY_UNREACHABLE": "Cannot reach ComfyUI: {detail}",
+    "COMFY_EXEC": "ComfyUI execution error (see the ComfyUI log)",
+    "COMFY_STATUS": "ComfyUI returned {code}: {detail}",
+    "NOTHING_TO_CAPTURE": "Nothing to capture — open a template in ComfyUI and press Run first",
+    "PROMPT_REQUIRED": "Enter a prompt",
+    "PROMPT_TOO_LONG": "Prompt too long (max {max} characters)",
+    "TOO_MANY_MODELS": "At most {max} models per run",
+    "BAD_TYPE": "Unsupported output type: {type}",
+    "BAD_RESOLUTION": "Unsupported resolution: {resolution}",
+    "QUEUE_FULL": "Queue full ({depth}/{max}), try again later",
+    "NO_WORKFLOW": "No \u201c{type}\u201d workflow imported for {label}",
+    "NODE_ERROR": "Workflow node error: {detail}",
+    "NOT_FOUND": "Not found",
+}
+
+
+def err(code, **params):
+    """Build an error payload: stable code + parameters + an English fallback sentence."""
+    text = ERROR_TEXT.get(code, code)
+    if params:
+        try:
+            text = text.format(**params)
+        except (KeyError, IndexError):
+            pass
+    return {"error_code": code, "error_params": params, "error": text}
+
+# ---------- ComfyUI HTTP helpers ----------
 def comfy_get(path):
     with urllib.request.urlopen(COMFY + path, timeout=30) as r:
         return json.loads(r.read().decode())
@@ -96,7 +125,7 @@ def comfy_post(path, body):
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.loads(r.read().decode())
 
-# ---------- Workflow analysis workflow 分析 ----------
+# ---------- Workflow analysis workflow ----------
 def all_string_inputs(graph):
     for n in graph.values():
         for v in (n.get("inputs", {}) or {}).values():
@@ -121,19 +150,18 @@ def detect_type(graph, model):
         return "video"
     if "saveimage" in cts or any("saveimage" in c for c in cts):
         # Many frames usually still means video, but be conservative: SaveImage only → image
-        # 保守起見：純 SaveImage → 圖片
         return "image"
     # Fallback: LTX / H3 are video models, and Wan defaults to video
-    # 後備：LTX / H3 是影片模型，Wan 預設影片
+    # LTX / H3 Wan
     return "video"
 
 # The positive prompt may live in these input names (in order of preference); negative_* excluded
-# 正向提示詞可能出現在這些 input 名稱（依序偏好），排除 negative_*
+# input negative_*
 POS_KEYS = ("text", "prompt", "positive_prompt", "text_g", "text_l", "value")
 
 def _pos_key(node):
     """Return the node's input name holding the positive prompt, or None.
-    回傳該節點裝正向提示詞的字串 input 名稱，沒有則 None。"""
+ input None"""
     ins = node.get("inputs", {}) or {}
     for k in POS_KEYS:
         if isinstance(ins.get(k), str):
@@ -159,7 +187,7 @@ def trace_to_text(graph, nid, seen):
 
 def find_positive_node(graph):
     # 1) Walk back from the sampler's positive link to the node holding the prompt
-    # 1) 從 sampler 的 positive 連線往回追到有提示詞的節點
+    # 1) sampler positive
     for n in graph.values():
         pv = (n.get("inputs", {}) or {}).get("positive")
         if isinstance(pv, list) and pv:
@@ -167,17 +195,17 @@ def find_positive_node(graph):
             if r:
                 return r
     # 2) Dedicated wrapper nodes whose input is simply prompt / text (skip negative-only ones)
-    # 2) 專用包裝節點：input 直接叫 prompt / text（排除只有 negative 的）
+    # 2) input prompt / text negative
     cand = [nid for nid, n in graph.items() if _pos_key(n)]
     # Prefer text-encode / video-wrapper class types whose _meta title has no 'negative'
-    # 優先 class_type 像文字編碼/影片包裝，且 _meta 標題不含 negative
+    # class_type / _meta negative
     def not_negative(nid):
         title = ((graph[nid].get("_meta", {}) or {}).get("title", "") or "").lower()
         return "negativ" not in title
     cand_pos = [c for c in cand if not_negative(c)]
     if len(cand_pos) == 1:
         return cand_pos[0]
-    # 3) _meta title contains 'positive' _meta 標題含 positive
+    # 3) _meta title contains 'positive' _meta positive
     for nid in cand:
         title = ((graph[nid].get("_meta", {}) or {}).get("title", "") or "").lower()
         if "posit" in title:
@@ -199,7 +227,7 @@ def inject(graph, prompt, seed, positive_nid, resolution=None):
                 if isinstance(v, str) and "__PROMPT__" in v:
                     ins[k] = v.replace("__PROMPT__", prompt); ok = True
     # seed: set every literal seed / noise_seed to the given value
-    # seed：把所有字面量 seed / noise_seed 設成指定值
+    # seed seed / noise_seed
     for n in graph.values():
         ins = n.get("inputs", {}) or {}
         for key in ("seed", "noise_seed"):
@@ -224,22 +252,22 @@ def inject(graph, prompt, seed, positive_nid, resolution=None):
 # Temporal down-sampling factor of each model's video VAE (used to estimate token counts).
 # h3=4 is cross-checked against the GB10 tuning guide's example (124 frames -> 31,992 tokens);
 # the rest are estimates from common values.
-# 各模型影片 VAE 的時間下採樣倍率（用於 token 量估算）。h3=4 已交叉驗證，其餘為推估。
+# VAE token h3=4
 TEMPORAL_DOWNSAMPLE = {"h3": 4, "ltx": 8, "wan": 4}
 TEMPORAL_CONFIRMED = {"h3"}
 
 def _safe_eval(expr, names):
     """Evaluate a simple expression limited to arithmetic plus round/max/min/floor/ceil.
-    限制在四則運算 + round/max/min/floor/ceil 的簡易表達式求值。"""
+ + round/max/min/floor/ceil"""
     import math as _m
     allowed = {"round": round, "max": max, "min": min,
                "floor": _m.floor, "ceil": _m.ceil, "abs": abs}
     allowed.update(names)
-    return eval(expr, {"__builtins__": {}}, allowed)  # noqa: S307 - internally generated expression, not user input 內部產生，非使用者輸入
+    return eval(expr, {"__builtins__": {}}, allowed)  # noqa: S307 - internally generated expression, not user input
 
 def _res_selector_dims(node):
     """Derive width/height from a ResolutionSelector node's megapixels/aspect_ratio/multiple.
-    從 ResolutionSelector 節點推算寬高。"""
+ ResolutionSelector"""
     ins = node.get("inputs", {}) or {}
     mp = ins.get("megapixels")
     ar = ins.get("aspect_ratio", "")
@@ -259,7 +287,7 @@ def _res_selector_dims(node):
 
 def resolve_value(graph, val, seen=None):
     """Resolve an input value recursively: literals are returned as-is, links are followed.
-    遞迴解析一個 input 值：字面量直接回傳；link 追到來源節點再解析。"""
+ input link"""
     seen = seen or set()
     if isinstance(val, (int, float)):
         return val
@@ -294,7 +322,7 @@ def resolve_value(graph, val, seen=None):
 
 def estimate_tokens(graph, model):
     """Return {width,height,frames,fps,latent_tokens,temporal_confirmed} or None.
-    回傳 {width,height,frames,fps,latent_tokens,temporal_confirmed} 或 None。"""
+ {width,height,frames,fps,latent_tokens,temporal_confirmed} None"""
     width = height = frames = fps = None
     for n in graph.values():
         ct = n.get("class_type", "")
@@ -335,7 +363,7 @@ def meta_path(model, otype):
 
 def load_state():
     """Report, per model, whether image/video workflows are imported and which positive node was found.
-    回報每個模型 image/video 是否已匯入 + 偵測到的正向節點。"""
+ image/video +"""
     state = {}
     for m in MODELS:
         state[m] = {"label": MODEL_LABEL[m], "image": None, "video": None}
@@ -352,22 +380,22 @@ NOTE_TYPES = {"Note", "MarkdownNote", "Reroute", "PrimitiveNode"}
 
 def sanitize(graph):
     """Drop nodes without a class_type, or that are notes/decorations — ComfyUI /prompt rejects them.
-    移除沒有 class_type 或屬於註解/擺設的節點。"""
+ class_type /"""
     return {nid: n for nid, n in graph.items()
             if isinstance(n, dict) and n.get("class_type")
             and n["class_type"] not in NOTE_TYPES}
 
 def save_graph(graph):
     """Detect model/type, find the positive node and save. Returns a result dict or {'error':...}.
-    偵測模型/型態、找正向節點並存檔。"""
+ /"""
     if not isinstance(graph, dict) or not graph:
-        return {"error": "Not a valid workflow 不是有效的 workflow"}
+        return err("NOT_A_WORKFLOW")
     if "nodes" in graph and "links" in graph:
-        return {"error": "This is the editor (UI) format; the API format is required 這是編輯器(UI)格式，需 API 格式"}
+        return err("UI_FORMAT")
     graph = sanitize(graph)
     model = detect_model(graph)
     if not model:
-        return {"error": "Could not identify the model 無法辨識模型"}
+        return err("UNKNOWN_MODEL")
     otype = detect_type(graph, model)
     pos = find_positive_node(graph)
     json.dump(graph, open(wf_path(model, otype), "w"))
@@ -412,20 +440,20 @@ class H(http.server.BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
 
-    def log_message(self, *a):  # quiet 安靜
+    def log_message(self, *a):  # quiet
         pass
 
     def _guard(self, path):
         """Access control for public mode. True means the request was already rejected.
-        對外模式的存取控制。回傳 True 代表已擋下，呼叫端應直接 return。"""
+ True return"""
         if not PUBLIC:
             return False
         if path in ADMIN_PATHS and not ADMIN_OK:
-            self._send(403, {"error": "This endpoint is disabled in public mode 此端點在對外模式已停用"})
+            self._send(403, err("ENDPOINT_DISABLED"))
             return True
         if path.startswith("/api/"):
             if not hmac.compare_digest(self.headers.get("X-Compare-Token", ""), TOKEN):
-                self._send(401, {"error": "unauthorized"})
+                self._send(401, err("UNAUTHORIZED"))
                 return True
         return False
 
@@ -439,11 +467,17 @@ class H(http.server.BaseHTTPRequestHandler):
             except FileNotFoundError:
                 return self._send(404, {"error": "index.html not found"})
             return self._send(200, html, "text/html; charset=utf-8")
+        if u.path == "/i18n.js":
+            fp = os.path.join(HERE, "i18n.js")
+            if os.path.exists(fp):
+                return self._send(200, open(fp, "rb").read(),
+                                  "application/javascript; charset=utf-8")
+            return self._send(404, err("NOT_FOUND"))
         if u.path in ("/hero.png", "/bg.png"):
             fp = os.path.join(HERE, u.path.lstrip("/"))
             if os.path.exists(fp):
                 return self._send(200, open(fp, "rb").read(), "image/png")
-            return self._send(404, {"error": "not found"})
+            return self._send(404, err("NOT_FOUND"))
         if u.path == "/api/models":
             return self._send(200, {"models": load_state(),
                                     "comfy": COMFY,
@@ -478,8 +512,9 @@ class H(http.server.BaseHTTPRequestHandler):
                 return self._send(200, {"state": "queued"})
             st = (entry.get("status", {}) or {})
             if st.get("status_str") == "error":
-                return self._send(200, {"state": "error",
-                                        "error": "ComfyUI execution error (see the ComfyUI log) ComfyUI 執行錯誤"})
+                payload = err("COMFY_EXEC")
+                payload["state"] = "error"
+                return self._send(200, payload)
             media = extract_media(entry)
             if media or st.get("completed"):
                 vram_gb = None
@@ -498,7 +533,7 @@ class H(http.server.BaseHTTPRequestHandler):
             if not name.endswith(".json"):
                 name += ".json"
             if not TPL_DIR:
-                return self._send(500, {"error": "Template directory not found 找不到範本目錄"})
+                return self._send(500, err("TEMPLATE_DIR_MISSING"))
             p = os.path.join(TPL_DIR, name)
             if not os.path.exists(p):
                 return self._send(404, {"error": "no such template"})
@@ -554,7 +589,7 @@ class H(http.server.BaseHTTPRequestHandler):
         ctype = self.headers.get("Content-Type", "")
         length = int(self.headers.get("Content-Length", "0"))
         raw = self.rfile.read(length)
-        # Accepts multipart (drag & drop) or raw JSON 支援 multipart（拖檔）或 raw json
+        # Accepts multipart (drag & drop) or raw JSON multipart raw json
         graph = None
         if ctype.startswith("multipart/form-data"):
             fs = cgi.FieldStorage(fp=__import__("io").BytesIO(raw), headers=self.headers,
@@ -566,19 +601,20 @@ class H(http.server.BaseHTTPRequestHandler):
             graph = json.loads(raw.decode())
         res = save_graph(graph)
         if "error" in res:
-            if "UI" in res["error"]:
-                res["error"] = ("This is the editor (UI) format. Export it from ComfyUI with "
-                            "'Save (API Format)' and upload that. 請改用 API 格式匯出後再上傳。")
+            # An upload in the editor format gets a more specific hint than the
+            # generic detection error.
+            if res.get("error_code") == "UI_FORMAT":
+                res = err("IMPORT_UI_FORMAT")
             return self._send(400, res)
         return self._send(200, res)
 
     def handle_capture(self):
         """Capture the flattened API workflow from ComfyUI's current /queue (or /history) and save it.
-        從 ComfyUI 目前的 /queue（或 /history）擷取已展開的 API workflow 並存檔。"""
+ ComfyUI /queue /history API workflow"""
         try:
             q = comfy_get("/queue")
         except Exception as e:
-            return self._send(502, {"error": f"Cannot reach ComfyUI 無法連到 ComfyUI：{e}"})
+            return self._send(502, err("COMFY_UNREACHABLE", detail=str(e)))
         graph = None; src = "queue"
         for key in ("queue_running", "queue_pending"):
             for item in q.get(key, []):
@@ -595,10 +631,9 @@ class H(http.server.BaseHTTPRequestHandler):
                 if pr and len(pr) >= 3 and isinstance(pr[2], dict):
                     graph = pr[2]
         if not graph:
-            return self._send(404, {"error": "Nothing to capture — open a template in ComfyUI and press Run first. "
-                                             "ComfyUI 目前沒有可擷取的 workflow。"})
+            return self._send(404, err("NOTHING_TO_CAPTURE"))
         res = save_graph(graph)
-        if src == "queue":  # cancel that run too, so a long video does not keep going 順手中斷這次
+        if src == "queue":  # cancel that run too, so a long video does not keep going
             try:
                 comfy_post("/interrupt", {}); comfy_post("/queue", {"clear": True})
             except Exception:
@@ -615,28 +650,28 @@ class H(http.server.BaseHTTPRequestHandler):
         want = body.get("models") or []
         resolution = body.get("resolution")
         if not prompt:
-            return self._send(400, {"error": "Enter a prompt 請輸入 prompt"})
+            return self._send(400, err("PROMPT_REQUIRED"))
         if PUBLIC:
             if len(prompt) > MAX_PROMPT:
-                return self._send(400, {"error": f"Prompt too long (max {MAX_PROMPT} chars) prompt 太長"})
+                return self._send(400, err("PROMPT_TOO_LONG", max=MAX_PROMPT))
             if len(want) > MAX_MODELS:
-                return self._send(400, {"error": f"At most {MAX_MODELS} models per run 一次最多比較 {MAX_MODELS} 個模型"})
+                return self._send(400, err("TOO_MANY_MODELS", max=MAX_MODELS))
             if otype not in ALLOWED_RES:
-                return self._send(400, {"error": f"Unsupported output type 不支援的輸出型態：{otype}"})
+                return self._send(400, err("BAD_TYPE", type=otype))
             if resolution and resolution not in ALLOWED_RES[otype]:
-                return self._send(400, {"error": f"Unsupported resolution 不支援的解析度：{resolution}"})
+                return self._send(400, err("BAD_RESOLUTION", resolution=resolution))
             try:
                 qi = comfy_get("/queue")
                 depth = len(qi.get("queue_running") or []) + len(qi.get("queue_pending") or [])
             except Exception:
                 depth = 0
             if depth + len(want) > MAX_PENDING:
-                return self._send(429, {"error": f"Queue full 佇列已滿（{depth}/{MAX_PENDING}），try again later 請稍後再試"})
+                return self._send(429, err("QUEUE_FULL", depth=depth, max=MAX_PENDING))
         results = {}
         for m in want:
             p = wf_path(m, otype)
             if not os.path.exists(p):
-                results[m] = {"error": f"No “{otype}” workflow imported for {MODEL_LABEL.get(m, m)} 尚未匯入該 workflow"}
+                results[m] = err("NO_WORKFLOW", type=otype, label=MODEL_LABEL.get(m, m))
                 continue
             graph = json.load(open(p))
             meta = json.load(open(meta_path(m, otype))) if os.path.exists(meta_path(m, otype)) else {}
@@ -646,13 +681,13 @@ class H(http.server.BaseHTTPRequestHandler):
             try:
                 resp = comfy_post("/prompt", {"prompt": graph, "client_id": CLIENT_ID})
                 if resp.get("node_errors"):
-                    results[m] = {"error": "Workflow node error workflow 有節點錯誤：" + json.dumps(resp["node_errors"])[:200]}
+                    results[m] = err("NODE_ERROR", detail=json.dumps(resp["node_errors"])[:200])
                 else:
                     results[m] = {"prompt_id": resp.get("prompt_id"), "prompt_injected": ok, "tokens": tok_info}
             except urllib.error.HTTPError as e:
-                results[m] = {"error": f"ComfyUI returned 回應 {e.code}：{e.read().decode()[:200]}"}
+                results[m] = err("COMFY_STATUS", code=e.code, detail=e.read().decode()[:200])
             except Exception as e:
-                results[m] = {"error": str(e)}
+                results[m] = err("COMFY_UNREACHABLE", detail=str(e))
         return self._send(200, {"results": results, "seed": seed})
 
 
@@ -661,12 +696,12 @@ class Server(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
 
 if __name__ == "__main__":
-    print(f">> Model comparison tool 模型比較工具： http://{HOST}:{PORT}")
-    print(f">> ComfyUI backend 連到 ComfyUI： {COMFY}")
+    print(f">> Model comparison tool: http://{HOST}:{PORT}")
+    print(f">> ComfyUI backend: {COMFY}")
     if PUBLIC:
-        print(f">> Mode: public — X-Compare-Token required 模式：對外（需 X-Compare-Token）")
-        print(f">>   admin endpoints 管理端點：{'open 已開放 (COMPARE_ADMIN=1)' if ADMIN_OK else 'blocked 已封鎖'}")
-        print(f">>   queue cap 佇列上限 {MAX_PENDING} · models 模型上限 {MAX_MODELS} · prompt {MAX_PROMPT} chars 字")
+        print(">> Mode: public — X-Compare-Token required")
+        print(f">>   admin endpoints: {'open (COMPARE_ADMIN=1)' if ADMIN_OK else 'blocked'}")
+        print(f">>   queue cap {MAX_PENDING} · models {MAX_MODELS} · prompt {MAX_PROMPT} chars")
     else:
-        print(f">> Mode: local — no authentication, do not expose 模式：本機（無認證，勿對外開放）")
+        print(">> Mode: local — no authentication, do not expose")
     Server((HOST, PORT), H).serve_forever()

@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Start the model comparison tool in the background. Binds 127.0.0.1:8890 by default
+# (localhost only) and needs ComfyUI running at http://127.0.0.1:8188.
+#
+# Public mode: if compare/.token exists (or COMPARE_TOKEN is already exported), the
+# server starts with that secret — every /api/* call then needs authentication and the
+# admin endpoints are blocked. Having a token is deliberately the default path: opening
+# the tunnel without one would leave this machine bare on the public internet.
 # 啟動模型比較工具（背景）。預設 127.0.0.1:8890（僅本機）。
 # 需要 ComfyUI 已在 http://127.0.0.1:8188 執行。
 #
@@ -14,7 +21,7 @@ LOG="$SCRIPT_DIR/compare.log"; PIDF="$SCRIPT_DIR/compare.pid"
 TOKF="$SCRIPT_DIR/.token"
 
 if [[ -f "$PIDF" ]] && kill -0 "$(cat "$PIDF")" 2>/dev/null; then
-  echo ">> 已在執行 (PID $(cat "$PIDF"))。 http://localhost:8890"; exit 0
+  echo ">> Already running 已在執行 (PID $(cat "$PIDF")). http://localhost:8890"; exit 0
 fi
 
 if [[ -z "${COMPARE_TOKEN:-}" && -f "$TOKF" ]]; then
@@ -25,10 +32,10 @@ fi
 cd "$SCRIPT_DIR"
 nohup "$PY" server.py >"$LOG" 2>&1 &
 echo $! > "$PIDF"; sleep 1
-echo ">> 已啟動 (PID $(cat "$PIDF"))。開瀏覽器： http://localhost:8890"
+echo ">> Started 已啟動 (PID $(cat "$PIDF")). Open 開瀏覽器： http://localhost:8890"
 if [[ -n "${COMPARE_TOKEN:-}" ]]; then
-  echo ">> 模式：對外（需 X-Compare-Token，管理端點已封鎖）"
+  echo ">> Mode: public — X-Compare-Token required, admin endpoints blocked 模式：對外"
 else
-  echo ">> 模式：本機（無認證）—— 開通道前務必先建立 compare/.token"
+  echo ">> Mode: local (no auth) — create compare/.token before opening any tunnel 模式：本機（無認證）"
 fi
 echo ">> log： tail -f \"$LOG\""

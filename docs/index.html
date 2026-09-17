@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LLM Explorer — AI 模型比較工具</title>
+<title>LLM Explorer — AI model comparison tool / AI 模型比較工具</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap">
 <style>
 :root{
@@ -15,6 +15,9 @@
 body{background:var(--bg);color:var(--fg);font:16px/1.7 'DM Sans',-apple-system,sans-serif}
 a{color:var(--teal);text-decoration:none}
 a:hover{text-decoration:underline}
+.zh{display:block;margin-top:4px;color:var(--mut);font-size:.88em}
+.zh-i{color:var(--mut);font-size:.72em;font-weight:500;margin-left:6px}
+.hero .tagline .zh{font-size:.8em}
 
 .hero{position:relative;overflow:hidden;padding:80px 24px 60px;text-align:center}
 .hero::before{content:'';position:absolute;inset:0;
@@ -93,7 +96,7 @@ footer a{color:var(--teal)}
 
 <div class="hero">
   <h1>LLM Explorer</h1>
-  <div class="tagline">多模型 AI 生成比較工具 — 影片 & 圖片，本機全離線</div>
+  <div class="tagline">Side-by-side AI generation across models — video &amp; images, fully local<span class="zh">多模型 AI 生成比較工具 — 影片 &amp; 圖片，本機全離線</span></div>
   <div class="badges">
     <span class="badge v">🎞️ LTX-2.5 · H3 · Wan</span>
     <span class="badge i">🖼️ FLUX.2 · Qwen · HiDream</span>
@@ -104,137 +107,137 @@ footer a{color:var(--teal)}
 <div class="container">
 
 <section>
-  <h2>功能特色</h2>
+  <h2>Features <span class="zh-i">功能特色</span></h2>
   <div class="feature-grid">
     <div class="fcard">
-      <h3>⚡ 同 Prompt 並排比較</h3>
-      <p>相同提示詞 + 相同 Seed，一鍵送出多個模型同時生成，結果並排顯示，直觀比較品質差異。</p>
+      <h3>⚡ Same prompt, side by side</h3>
+      <p>Same prompt and same seed, sent to several models in one click; results line up next to each other so quality differences are obvious.<span class="zh">相同提示詞 + 相同 Seed，一鍵送出多個模型同時生成，結果並排顯示，直觀比較品質差異。</span></p>
     </div>
     <div class="fcard">
-      <h3>🎲 智能提示詞生成</h3>
-      <p>內建豐富的隨機提示詞引擎：12 種角色描述、30 種動作、18 種場景與匹配音效、多種攝影風格。</p>
+      <h3>🎲 Prompt generator</h3>
+      <p>A built-in random prompt engine: 12 subject descriptions, 30 actions, 18 scenes with matching audio, and a range of camera styles.<span class="zh">內建豐富的隨機提示詞引擎：12 種角色描述、30 種動作、18 種場景與匹配音效、多種攝影風格。</span></p>
     </div>
     <div class="fcard">
-      <h3>🔒 完全離線</h3>
-      <p>所有模型在本機執行，資料不外流。綁定 localhost，無需網路連線即可生成。</p>
+      <h3>🔒 Fully offline</h3>
+      <p>Every model runs locally and nothing leaves the machine. Bound to localhost, so generation needs no internet connection.<span class="zh">所有模型在本機執行，資料不外流。綁定 localhost，無需網路連線即可生成。</span></p>
     </div>
     <div class="fcard">
-      <h3>📐 多解析度支援</h3>
-      <p>影片：SD / HD / FHD / 2K。圖片：1:1 / 4:3 / 3:4 / 16:9 / 9:16。依模型原生解析度最佳化。</p>
+      <h3>📐 Multiple resolutions</h3>
+      <p>Video: SD / HD / FHD / 2K. Images: 1:1 / 4:3 / 3:4 / 16:9 / 9:16, tuned to each model's native resolution.<span class="zh">影片：SD / HD / FHD / 2K。圖片：1:1 / 4:3 / 3:4 / 16:9 / 9:16。依模型原生解析度最佳化。</span></p>
     </div>
     <div class="fcard">
-      <h3>🚀 GB10 深度優化</h3>
-      <p>NVFP4 量化、Sol-Attn 稀疏注意力、FirstBlockCache、TeaCache — H3 從 1200s 加速至 298s。</p>
+      <h3>🚀 Tuned for GB10</h3>
+      <p>NVFP4 quantisation, Sol-Attn sparse attention, FirstBlockCache and TeaCache — H3 went from 1200s down to 298s.<span class="zh">NVFP4 量化、Sol-Attn 稀疏注意力、FirstBlockCache、TeaCache — H3 從 1200s 加速至 298s。</span></p>
     </div>
     <div class="fcard">
-      <h3>💾 即時監控</h3>
-      <p>每次生成完成顯示耗時與 VRAM 使用量，輕鬆掌握資源消耗。圖片可點擊開啟原圖檢視。</p>
+      <h3>💾 Live monitoring</h3>
+      <p>Each finished run reports elapsed time and VRAM usage, so resource cost stays visible. Click an image to open the full-size version.<span class="zh">每次生成完成顯示耗時與 VRAM 使用量，輕鬆掌握資源消耗。圖片可點擊開啟原圖檢視。</span></p>
     </div>
   </div>
 </section>
 
 <section>
-  <h2>支援模型</h2>
+  <h2>Supported models <span class="zh-i">支援模型</span></h2>
   <div class="model-grid">
     <div class="mcard vid">
-      <h4>LTX-2.5 <span class="type-tag vid">影片</span></h4>
+      <h4>LTX-2.5 <span class="type-tag vid">video 影片</span></h4>
       <table>
-        <tr><td>參數量</td><td>22B</td></tr>
-        <tr><td>精度</td><td>FP8</td></tr>
-        <tr><td>HD 速度</td><td>~144s / 5s</td></tr>
-        <tr><td>授權</td><td>Apache 2.0</td></tr>
+        <tr><td>Params 參數量</td><td>22B</td></tr>
+        <tr><td>Precision 精度</td><td>FP8</td></tr>
+        <tr><td>HD speed HD 速度</td><td>~144s / 5s</td></tr>
+        <tr><td>Licence 授權</td><td>Apache 2.0</td></tr>
       </table>
     </div>
     <div class="mcard vid">
-      <h4>MiniMax H3 <span class="type-tag vid">影片</span></h4>
+      <h4>MiniMax H3 <span class="type-tag vid">video 影片</span></h4>
       <table>
-        <tr><td>參數量</td><td>~20B</td></tr>
-        <tr><td>精度</td><td>NVFP4 混合</td></tr>
-        <tr><td>HD 速度</td><td>~298s / 5s</td></tr>
-        <tr><td>授權</td><td>MiniMax 開放</td></tr>
+        <tr><td>Params 參數量</td><td>~20B</td></tr>
+        <tr><td>Precision 精度</td><td>NVFP4 mixed 混合</td></tr>
+        <tr><td>HD speed HD 速度</td><td>~298s / 5s</td></tr>
+        <tr><td>Licence 授權</td><td>MiniMax open 開放</td></tr>
       </table>
     </div>
     <div class="mcard vid">
-      <h4>Wan 2.2 <span class="type-tag vid">影片</span></h4>
+      <h4>Wan 2.2 <span class="type-tag vid">video 影片</span></h4>
       <table>
-        <tr><td>參數量</td><td>14B</td></tr>
-        <tr><td>精度</td><td>FP8</td></tr>
-        <tr><td>HD 速度</td><td>待測</td></tr>
-        <tr><td>授權</td><td>Apache 2.0</td></tr>
+        <tr><td>Params 參數量</td><td>14B</td></tr>
+        <tr><td>Precision 精度</td><td>FP8</td></tr>
+        <tr><td>HD speed HD 速度</td><td>not measured 待測</td></tr>
+        <tr><td>Licence 授權</td><td>Apache 2.0</td></tr>
       </table>
     </div>
     <div class="mcard img">
-      <h4>FLUX.2 Dev <span class="type-tag img">圖片</span></h4>
+      <h4>FLUX.2 Dev <span class="type-tag img">image 圖片</span></h4>
       <table>
-        <tr><td>參數量</td><td>32B</td></tr>
-        <tr><td>精度</td><td>NVFP4 混合</td></tr>
-        <tr><td>步數</td><td>10</td></tr>
-        <tr><td>授權</td><td>Apache 2.0</td></tr>
+        <tr><td>Params 參數量</td><td>32B</td></tr>
+        <tr><td>Precision 精度</td><td>NVFP4 mixed 混合</td></tr>
+        <tr><td>Steps 步數</td><td>10</td></tr>
+        <tr><td>Licence 授權</td><td>Apache 2.0</td></tr>
       </table>
     </div>
     <div class="mcard img">
-      <h4>Qwen-Image 2512 <span class="type-tag img">圖片</span></h4>
+      <h4>Qwen-Image 2512 <span class="type-tag img">image 圖片</span></h4>
       <table>
-        <tr><td>參數量</td><td>20B</td></tr>
-        <tr><td>精度</td><td>FP8</td></tr>
-        <tr><td>步數</td><td>30 (CFG=1)</td></tr>
-        <tr><td>授權</td><td>Apache 2.0</td></tr>
+        <tr><td>Params 參數量</td><td>20B</td></tr>
+        <tr><td>Precision 精度</td><td>FP8</td></tr>
+        <tr><td>Steps 步數</td><td>30 (CFG=1)</td></tr>
+        <tr><td>Licence 授權</td><td>Apache 2.0</td></tr>
       </table>
     </div>
     <div class="mcard img">
-      <h4>HiDream-I1 Dev <span class="type-tag img">圖片</span></h4>
+      <h4>HiDream-I1 Dev <span class="type-tag img">image 圖片</span></h4>
       <table>
-        <tr><td>參數量</td><td>17B</td></tr>
-        <tr><td>精度</td><td>FP8</td></tr>
-        <tr><td>步數</td><td>20 (LCM)</td></tr>
-        <tr><td>授權</td><td>MIT</td></tr>
+        <tr><td>Params 參數量</td><td>17B</td></tr>
+        <tr><td>Precision 精度</td><td>FP8</td></tr>
+        <tr><td>Steps 步數</td><td>20 (LCM)</td></tr>
+        <tr><td>Licence 授權</td><td>MIT</td></tr>
       </table>
     </div>
   </div>
 </section>
 
 <section>
-  <h2>效能基準</h2>
+  <h2>Benchmarks <span class="zh-i">效能基準</span></h2>
   <table class="perf-table">
     <thead>
-      <tr><th>模型</th><th>類型</th><th>SD (860×480)</th><th>HD (1376×768)</th><th>FHD (1920×1080)</th></tr>
+      <tr><th>Model 模型</th><th>Type 類型</th><th>SD (860×480)</th><th>HD (1376×768)</th><th>FHD (1920×1080)</th></tr>
     </thead>
     <tbody>
-      <tr><td>LTX-2.5</td><td>影片 5s</td><td>—</td><td class="fast">144s</td><td>—</td></tr>
-      <tr><td>MiniMax H3</td><td>影片 5s</td><td>—</td><td class="med">298s</td><td class="med">772s</td></tr>
-      <tr><td>FLUX.2 Dev</td><td>圖片</td><td colspan="3" style="text-align:center">~57s (NVFP4, 10 步)</td></tr>
-      <tr><td>Qwen-Image</td><td>圖片</td><td colspan="3" style="text-align:center">~40s (FP8, 30 步, CFG=1)</td></tr>
-      <tr><td>HiDream-I1</td><td>圖片</td><td colspan="3" style="text-align:center">~35s (FP8, 20 步, LCM)</td></tr>
+      <tr><td>LTX-2.5</td><td>video 影片 5s</td><td>—</td><td class="fast">144s</td><td>—</td></tr>
+      <tr><td>MiniMax H3</td><td>video 影片 5s</td><td>—</td><td class="med">298s</td><td class="med">772s</td></tr>
+      <tr><td>FLUX.2 Dev</td><td>image 圖片</td><td colspan="3" style="text-align:center">~57s (NVFP4, 10 steps 步)</td></tr>
+      <tr><td>Qwen-Image</td><td>image 圖片</td><td colspan="3" style="text-align:center">~40s (FP8, 30 steps 步, CFG=1)</td></tr>
+      <tr><td>HiDream-I1</td><td>image 圖片</td><td colspan="3" style="text-align:center">~35s (FP8, 20 steps 步, LCM)</td></tr>
     </tbody>
   </table>
-  <p style="font-size:12px;color:var(--mut);margin-top:8px">* 測試於 NVIDIA GB10 (DGX Spark)，128GB 統一記憶體。圖片速度為預估值。</p>
+  <p style="font-size:12px;color:var(--mut);margin-top:8px">* Measured on NVIDIA GB10 (DGX Spark), 128 GB unified memory. Image timings are estimates.<br>* 測試於 NVIDIA GB10 (DGX Spark)，128GB 統一記憶體。圖片速度為預估值。</p>
 </section>
 
 <section>
-  <h2>系統架構</h2>
+  <h2>Architecture <span class="zh-i">系統架構</span></h2>
   <div class="arch">
     <pre>
 <b>LLM Explorer/</b>
 ├── <span class="teal">chatbot/</span>          Ollama + Open WebUI (Docker)     → localhost:8080
-│   ├── start.sh        多 LLM 聊天介面（Qwen3 / Gemma3）
-│   └── models.txt      模型清單
+│   ├── start.sh        multi-LLM chat UI 多 LLM 聊天介面（Qwen3 / Gemma3）
+│   └── models.txt      model list 模型清單
 │
 ├── <span class="teal">comfyui/</span>          ComfyUI + Manager (venv)          → localhost:8188
-│   ├── setup.sh        PyTorch cu130 + aarch64 環境
-│   └── workflows/      官方模板 + 比對 workflow
+│   ├── setup.sh        PyTorch cu130 + aarch64 environment 環境
+│   └── workflows/      official templates + comparison notes 官方模板 + 比對說明
 │
-├── <span class="acc">compare/</span>          模型比較工具 (Python)              → localhost:8890
-│   ├── server.py       API proxy + workflow 注入引擎
-│   ├── index.html      比較介面 + 內嵌說明
-│   └── workflows/      6 個模型的 API-format workflow
+├── <span class="acc">compare/</span>          comparison tool 模型比較工具 (Python) → localhost:8890
+│   ├── server.py       API proxy + workflow injection 注入引擎
+│   ├── index.html      comparison UI + inline help 比較介面 + 內嵌說明
+│   └── workflows/      API-format workflows for 6 models 6 個模型的 workflow
 │
-└── <span class="plum">docs/</span>             說明文件 + GitHub Pages
+└── <span class="plum">docs/</span>             documentation 說明文件 + GitHub Pages
     </pre>
   </div>
 </section>
 
 <section>
-  <h2>硬體環境</h2>
+  <h2>Hardware <span class="zh-i">硬體環境</span></h2>
   <div class="hw-specs">
     <div class="hw-item">
       <div class="icon">🎮</div>
@@ -244,7 +247,7 @@ footer a{color:var(--teal)}
     <div class="hw-item">
       <div class="icon">🧠</div>
       <div class="val">128 GB</div>
-      <div class="lbl">統一記憶體</div>
+      <div class="lbl">Unified memory 統一記憶體</div>
     </div>
     <div class="hw-item">
       <div class="icon">⚡</div>
@@ -260,23 +263,23 @@ footer a{color:var(--teal)}
 </section>
 
 <section>
-  <h2>優化技術</h2>
+  <h2>Optimisations <span class="zh-i">優化技術</span></h2>
   <div class="feature-grid">
     <div class="fcard">
-      <h3>🔢 NVFP4 量化</h3>
-      <p>Blackwell 原生 4-bit 混合精度格式。FLUX.2 從 34GB 降至 22GB，記憶體搬運減少 35%，速度提升約 30-40%。</p>
+      <h3>🔢 NVFP4 quantisation</h3>
+      <p>Blackwell's native 4-bit mixed-precision format. FLUX.2 drops from 34 GB to 22 GB, memory traffic falls by 35%, and throughput rises roughly 30-40%.<span class="zh">Blackwell 原生 4-bit 混合精度格式。FLUX.2 從 34GB 降至 22GB，記憶體搬運減少 35%，速度提升約 30-40%。</span></p>
     </div>
     <div class="fcard">
-      <h3>⚡ Sol-Attn 稀疏注意力</h3>
-      <p>H3 專用加速。tau=1.3 在 HD 解析度下穩定運作，高解析度需注意 token 數限制。</p>
+      <h3>⚡ Sol-Attn sparse attention</h3>
+      <p>H3-specific speed-up. tau=1.3 is stable at HD; at higher resolutions watch the token count.<span class="zh">H3 專用加速。tau=1.3 在 HD 解析度下穩定運作，高解析度需注意 token 數限制。</span></p>
     </div>
     <div class="fcard">
       <h3>🧊 FirstBlockCache</h3>
-      <p>快取第一層 transformer block 的計算結果，減少重複運算。閾值 0.1，最大連續命中 2 次。</p>
+      <p>Caches the first transformer block's output to avoid recomputation. Threshold 0.1, at most 2 consecutive hits.<span class="zh">快取第一層 transformer block 的計算結果，減少重複運算。閾值 0.1，最大連續命中 2 次。</span></p>
     </div>
     <div class="fcard">
       <h3>🍵 TeaCache</h3>
-      <p>H3 專用時序快取。相鄰步之間差異小於閾值時跳過計算，加速 denoising loop。</p>
+      <p>H3-specific temporal cache: when the difference between adjacent steps falls below the threshold, the step is skipped, speeding up the denoising loop.<span class="zh">H3 專用時序快取。相鄰步之間差異小於閾值時跳過計算，加速 denoising loop。</span></p>
     </div>
   </div>
 </section>

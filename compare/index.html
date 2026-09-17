@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>模型比較 · 影片 & 圖片生成</title>
+<title>Model comparison 模型比較 · video &amp; image generation</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap">
 <style>
   :root{
@@ -142,6 +142,8 @@
   .info-panel summary{font-size:16px;font-weight:700;cursor:pointer;padding:14px 0;color:var(--fg);
     list-style:none;display:flex;align-items:center;gap:8px}
   .info-panel summary::before{content:'▶';font-size:11px;transition:transform .2s;display:inline-block}
+  .zh{display:block;margin-top:3px;opacity:.72;font-size:.88em}
+  .zh-i{opacity:.7;font-size:.6em;font-weight:500;margin-left:6px}
   .info-panel[open] summary::before{transform:rotate(90deg)}
   .info-panel .info-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));margin-top:8px}
   .info-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
@@ -168,198 +170,200 @@
   <div class="hero-banner"></div>
   <div class="hero-bar">
     <div class="hw">
-      <h1>模型比較</h1>
-      <div class="sub">同一個 prompt · 影片：LTX-2.5 / H3 / Wan · 圖片：FLUX.2 / Qwen / HiDream · 本機 ComfyUI</div>
+      <h1>Model Comparison <span class="zh-i">模型比較</span></h1>
+      <div class="sub">One prompt, many models · video: LTX-2.5 / H3 / Wan · images: FLUX.2 / Qwen / HiDream · local ComfyUI<span class="zh">同一個 prompt · 影片：LTX-2.5 / H3 / Wan · 圖片：FLUX.2 / Qwen / HiDream · 本機 ComfyUI</span></div>
     </div>
-    <div class="qbox" id="qbox" title="ComfyUI 佇列狀態">
+    <div class="qbox" id="qbox" title="ComfyUI queue status ComfyUI 佇列狀態">
       <span class="qdot" id="qdot"></span>
-      <span id="qtext">佇列 —</span>
+      <span id="qtext">queue 佇列 —</span>
     </div>
   </div>
 </header>
 <main>
 
-  <!-- 設定：匯入 workflow -->
+  <!-- Setup: import workflow 設定：匯入 workflow -->
   <details class="setup card" id="setup">
-    <summary>⚙️ workflow 設定（首次使用：每個模型各設定一次）</summary>
+    <summary>⚙️ Workflow setup — once per model on first use（workflow 設定：每個模型各設定一次）</summary>
     <p style="color:var(--mut);font-size:13px;margin-bottom:8px">
-      <b>最簡單：</b>在 <a id="comfyLink" href="http://localhost:8188" target="_blank">ComfyUI</a> 開啟該模型的官方 Template（<i>Workflow → Browse Templates</i>）→ 按一次 <b>Run</b> →
-      回到這裡按下方 <b>🎯 從 ComfyUI 擷取</b>，即可自動抓取並辨識模型（會順手中斷該次生成）。
-      每個模型（LTX-2.5 / Wan 2.2 / MiniMax H3）各做一次。
+      <b>Easiest route:</b> open that model's official template in <a id="comfyLink" href="http://localhost:8188" target="_blank">ComfyUI</a> (<i>Workflow → Browse Templates</i>) → press <b>Run</b> once →
+      come back and press <b>🎯 Capture from ComfyUI</b> below. The workflow is captured and the model identified (that run is cancelled in the process). Do this once per model.
+      <span class="zh"><b>最簡單：</b>在 ComfyUI 開啟該模型的官方 Template（<i>Workflow → Browse Templates</i>）→ 按一次 <b>Run</b> → 回到這裡按 <b>🎯 從 ComfyUI 擷取</b>，即可自動抓取並辨識模型（會順手中斷該次生成）。每個模型各做一次。</span>
     </p>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 4px">
-      <button class="btn" id="capture">🎯 從 ComfyUI 擷取目前 workflow</button>
+      <button class="btn" id="capture">🎯 Capture from ComfyUI 從 ComfyUI 擷取</button>
       <span class="status" id="capHint"></span>
     </div>
     <p style="color:var(--mut);font-size:12px;margin:4px 0 0">
-      或用檔案：ComfyUI 開啟 <code>Enable Dev mode</code> 後 <b>Save (API Format)</b> 匯出 JSON，拖到下方卡片。
+      Or by file: enable <code>Dev mode</code> in ComfyUI, export with <b>Save (API Format)</b>, then drop the JSON onto a card below.<span class="zh">或用檔案：ComfyUI 開啟 <code>Enable Dev mode</code> 後 <b>Save (API Format)</b> 匯出 JSON，拖到下方卡片。</span>
     </p>
     <div class="setup-cards" id="setupCards"></div>
   </details>
 
-  <!-- 控制列 -->
+  <!-- Controls 控制列 -->
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <label>Prompt（三個模型共用）</label>
-      <button class="btn ghost" id="randPrompt" title="隨機產生 prompt">🎲 Random</button>
+      <label>Prompt — shared by all models 三模型共用</label>
+      <button class="btn ghost" id="randPrompt" title="Generate a random prompt 隨機產生 prompt">🎲 Random</button>
     </div>
     <div style="font-size:12px;color:var(--mut);margin-bottom:6px;line-height:1.5">
-      描述你想生成的畫面。建議包含：<b>主體</b>（人物/物體）、<b>動作</b>、<b>場景</b>、<b>光線</b>、<b>風格</b>。英文效果較佳。點 🎲 Random 可自動組合豐富的提示詞。
+      Describe the shot you want. Include the <b>subject</b>, the <b>action</b>, the <b>scene</b>, the <b>lighting</b> and a <b>style</b>. English prompts work better. 🎲 Random composes a detailed prompt for you.<span class="zh">描述你想生成的畫面。建議包含：<b>主體</b>、<b>動作</b>、<b>場景</b>、<b>光線</b>、<b>風格</b>。英文效果較佳。</span>
     </div>
-    <textarea id="prompt" placeholder="例：A red fox running through a snowy forest at sunrise, cinematic"></textarea>
+    <textarea id="prompt" placeholder="e.g. 例：A red fox running through a snowy forest at sunrise, cinematic"></textarea>
     <div class="row" style="margin-top:12px">
       <div class="seed">
         <label>Seed</label>
         <div style="font-size:11px;color:var(--mut);margin-bottom:4px;line-height:1.4">
-          相同 Seed + Prompt = 相同結果，方便跨模型公平比較
+          Same seed + same prompt = same result, which is what makes the comparison fair<span class="zh">相同 Seed + Prompt = 相同結果，方便跨模型公平比較</span>
         </div>
         <div style="display:flex;gap:8px">
           <input type="number" id="seed">
-          <button class="btn ghost" id="dice" title="隨機">🎲</button>
+          <button class="btn ghost" id="dice" title="Random 隨機">🎲</button>
         </div>
       </div>
       <div>
-        <label>解析度</label>
+        <label>Resolution 解析度</label>
         <select id="resSel"></select>
       </div>
       <div>
-        <label>輸出形式</label>
+        <label>Output 輸出形式</label>
         <div class="seg" id="typeSeg">
-          <button data-t="image">🖼️ 圖片</button>
-          <button data-t="video" class="on">🎞️ 影片</button>
+          <button data-t="image">🖼️ Image 圖片</button>
+          <button data-t="video" class="on">🎞️ Video 影片</button>
         </div>
       </div>
       <div style="flex:2">
-        <label>要比較的模型</label>
+        <label>Models to compare 要比較的模型</label>
         <div class="mchips" id="mchips"></div>
       </div>
     </div>
     <div style="margin-top:14px;display:flex;gap:12px;align-items:center">
-      <button class="btn" id="go">▶ 一次生成並比較</button>
-      <button class="btn stop" id="stopAll">■ 停止全部</button>
+      <button class="btn" id="go">▶ Generate &amp; compare 一次生成並比較</button>
+      <button class="btn stop" id="stopAll">■ Stop all 停止全部</button>
       <span class="status" id="hint"></span>
     </div>
   </div>
 
-  <!-- 說明面板 -->
+  <!-- Info panel 說明面板 -->
   <details class="info-panel card">
-    <summary>📋 模型規格與使用說明</summary>
+    <summary>📋 Model specs &amp; usage notes 模型規格與使用說明</summary>
 
     <div class="info-grid">
-      <!-- 影片模型 -->
+      <!-- Video models 影片模型 -->
       <div class="info-card">
-        <h4>LTX-2.5 <span class="badge video">影片</span></h4>
+        <h4>LTX-2.5 <span class="badge video">video 影片</span></h4>
         <table>
-          <tr><td>參數量</td><td>22B</td></tr>
-          <tr><td>精度</td><td>FP8</td></tr>
+          <tr><td>Params 參數量</td><td>22B</td></tr>
+          <tr><td>Precision 精度</td><td>FP8</td></tr>
           <tr><td>VRAM 用量</td><td>~22 GB</td></tr>
-          <tr><td>HD 速度</td><td>~144s / 5s 影片</td></tr>
-          <tr><td>優化</td><td>FP8 權重</td></tr>
-          <tr><td>授權</td><td>Apache 2.0</td></tr>
+          <tr><td>HD speed HD 速度</td><td>~144s per 5s clip</td></tr>
+          <tr><td>Optimisations 優化</td><td>FP8 weights 權重</td></tr>
+          <tr><td>Licence 授權</td><td>Apache 2.0</td></tr>
         </table>
       </div>
       <div class="info-card">
-        <h4>MiniMax H3 <span class="badge video">影片</span></h4>
+        <h4>MiniMax H3 <span class="badge video">video 影片</span></h4>
         <table>
-          <tr><td>參數量</td><td>~20B</td></tr>
-          <tr><td>精度</td><td>NVFP4 混合</td></tr>
+          <tr><td>Params 參數量</td><td>~20B</td></tr>
+          <tr><td>Precision 精度</td><td>NVFP4 mixed 混合</td></tr>
           <tr><td>VRAM 用量</td><td>~19 GB</td></tr>
-          <tr><td>HD 速度</td><td>~298s / 5s 影片</td></tr>
-          <tr><td>優化</td><td>NVFP4 + Sol-Attn + FBC + TeaCache</td></tr>
-          <tr><td>授權</td><td>MiniMax 開放</td></tr>
+          <tr><td>HD speed HD 速度</td><td>~298s per 5s clip</td></tr>
+          <tr><td>Optimisations 優化</td><td>NVFP4 + Sol-Attn + FBC + TeaCache</td></tr>
+          <tr><td>Licence 授權</td><td>MiniMax open 開放</td></tr>
         </table>
-        <div class="info-note">⚠️ 2K 以上解析度不建議 — Sol-Attn 在高 token 數下可能產生網格偽影，全量 attention 則 OOM。</div>
+        <div class="info-note">⚠️ 2K and above is not recommended — at high token counts Sol-Attn can produce grid artefacts, and full attention runs out of memory.<span class="zh">2K 以上解析度不建議 — Sol-Attn 在高 token 數下可能產生網格偽影，全量 attention 則 OOM。</span></div>
       </div>
       <div class="info-card">
-        <h4>Wan 2.2 <span class="badge video">影片</span></h4>
+        <h4>Wan 2.2 <span class="badge video">video 影片</span></h4>
         <table>
-          <tr><td>參數量</td><td>14B</td></tr>
-          <tr><td>精度</td><td>FP8</td></tr>
+          <tr><td>Params 參數量</td><td>14B</td></tr>
+          <tr><td>Precision 精度</td><td>FP8</td></tr>
           <tr><td>VRAM 用量</td><td>~14 GB</td></tr>
-          <tr><td>HD 速度</td><td>待測</td></tr>
-          <tr><td>優化</td><td>FP8 權重</td></tr>
-          <tr><td>授權</td><td>Apache 2.0</td></tr>
+          <tr><td>HD speed HD 速度</td><td>not measured 待測</td></tr>
+          <tr><td>Optimisations 優化</td><td>FP8 weights 權重</td></tr>
+          <tr><td>Licence 授權</td><td>Apache 2.0</td></tr>
         </table>
       </div>
 
-      <!-- 圖片模型 -->
+      <!-- Image models 圖片模型 -->
       <div class="info-card">
-        <h4>FLUX.2 Dev <span class="badge image">圖片</span></h4>
+        <h4>FLUX.2 Dev <span class="badge image">image 圖片</span></h4>
         <table>
-          <tr><td>參數量</td><td>32B</td></tr>
-          <tr><td>精度</td><td>NVFP4 混合</td></tr>
+          <tr><td>Params 參數量</td><td>32B</td></tr>
+          <tr><td>Precision 精度</td><td>NVFP4 mixed 混合</td></tr>
           <tr><td>VRAM 用量</td><td>~23 GB</td></tr>
-          <tr><td>步數</td><td>10</td></tr>
-          <tr><td>文字編碼器</td><td>Mistral 3 Small</td></tr>
-          <tr><td>最大解析度</td><td>4MP (2048×2048)</td></tr>
-          <tr><td>授權</td><td>Apache 2.0</td></tr>
+          <tr><td>Steps 步數</td><td>10</td></tr>
+          <tr><td>Text encoder 文字編碼器</td><td>Mistral 3 Small</td></tr>
+          <tr><td>Max resolution 最大解析度</td><td>4MP (2048×2048)</td></tr>
+          <tr><td>Licence 授權</td><td>Apache 2.0</td></tr>
         </table>
       </div>
       <div class="info-card">
-        <h4>Qwen-Image 2512 <span class="badge image">圖片</span></h4>
+        <h4>Qwen-Image 2512 <span class="badge image">image 圖片</span></h4>
         <table>
-          <tr><td>參數量</td><td>20B</td></tr>
-          <tr><td>精度</td><td>FP8</td></tr>
+          <tr><td>Params 參數量</td><td>20B</td></tr>
+          <tr><td>Precision 精度</td><td>FP8</td></tr>
           <tr><td>VRAM 用量</td><td>~20 GB</td></tr>
-          <tr><td>步數</td><td>30 (CFG=1)</td></tr>
-          <tr><td>文字編碼器</td><td>Qwen2.5-VL 7B</td></tr>
-          <tr><td>最佳解析度</td><td>1024² ~ 1664×928</td></tr>
-          <tr><td>授權</td><td>Apache 2.0</td></tr>
+          <tr><td>Steps 步數</td><td>30 (CFG=1)</td></tr>
+          <tr><td>Text encoder 文字編碼器</td><td>Qwen2.5-VL 7B</td></tr>
+          <tr><td>Best resolution 最佳解析度</td><td>1024² ~ 1664×928</td></tr>
+          <tr><td>Licence 授權</td><td>Apache 2.0</td></tr>
         </table>
       </div>
       <div class="info-card">
-        <h4>HiDream-I1 Dev <span class="badge image">圖片</span></h4>
+        <h4>HiDream-I1 Dev <span class="badge image">image 圖片</span></h4>
         <table>
-          <tr><td>參數量</td><td>17B</td></tr>
-          <tr><td>精度</td><td>FP8</td></tr>
+          <tr><td>Params 參數量</td><td>17B</td></tr>
+          <tr><td>Precision 精度</td><td>FP8</td></tr>
           <tr><td>VRAM 用量</td><td>~16 GB</td></tr>
-          <tr><td>步數</td><td>20 (LCM, CFG=1)</td></tr>
-          <tr><td>文字編碼器</td><td>CLIP×2 + T5 + LLaMA 8B</td></tr>
-          <tr><td>訓練解析度</td><td>1024×1024</td></tr>
-          <tr><td>授權</td><td>MIT</td></tr>
+          <tr><td>Steps 步數</td><td>20 (LCM, CFG=1)</td></tr>
+          <tr><td>Text encoder 文字編碼器</td><td>CLIP×2 + T5 + LLaMA 8B</td></tr>
+          <tr><td>Trained at 訓練解析度</td><td>1024×1024</td></tr>
+          <tr><td>Licence 授權</td><td>MIT</td></tr>
         </table>
       </div>
     </div>
 
-    <!-- 解析度建議 -->
+    <!-- Resolution guidance 解析度建議 -->
     <div class="tip-section">
-      <h4>📐 解析度建議</h4>
+      <h4>📐 Resolution guidance 解析度建議</h4>
       <ul>
-        <li><b>影片</b>：HD (1376×768) 為最佳性價比；FHD (1920×1080) 品質更好但耗時加倍；2K 僅建議 LTX 使用</li>
-        <li><b>圖片</b>：1024×1024 為通用安全值；FLUX.2 支援最高 2048×2048；Qwen 最佳比例為 1328×1328 或 1664×928</li>
+        <li><b>Video 影片</b>: HD (1376×768) is the sweet spot; FHD (1920×1080) looks better but takes twice as long; 2K is only advisable on LTX.</li>
+        <li><b>Images 圖片</b>: 1024×1024 is the safe default; FLUX.2 goes up to 2048×2048; Qwen is best at 1328×1328 or 1664×928.</li>
       </ul>
     </div>
 
-    <!-- 操作提示 -->
+    <!-- Usage tips 操作提示 -->
     <div class="tip-section">
-      <h4>💡 使用技巧</h4>
+      <h4>💡 Tips 使用技巧</h4>
       <ul>
-        <li>首次使用需先在上方「workflow 設定」匯入各模型的 ComfyUI workflow</li>
-        <li>🎲 Random 會自動生成含角色、場景、光線、攝影風格的豐富提示詞</li>
-        <li>同一個 Seed + 相同 Prompt 可在不同模型間做公平比較</li>
-        <li>點擊生成的圖片可在新分頁開啟原圖檢視</li>
-        <li>輸出右下角顯示生成耗時與當前 VRAM 使用量</li>
-        <li>一次只跑一個模型可降低記憶體壓力，避免 OOM</li>
+        <li>On first use, import each model's ComfyUI workflow under “Workflow setup” above. 首次使用需先匯入各模型的 workflow。</li>
+        <li>🎲 Random builds a prompt with subject, scene, lighting and camera style. 自動生成豐富的提示詞。</li>
+        <li>The same seed and prompt makes the comparison across models fair. 同 Seed + 同 Prompt 才是公平比較。</li>
+        <li>Click a generated image to open the full-size version in a new tab. 點擊圖片可開啟原圖。</li>
+        <li>Elapsed time and current VRAM usage appear at the bottom right of each output. 右下角顯示耗時與 VRAM。</li>
+        <li>Running one model at a time keeps memory pressure down and avoids OOM. 一次只跑一個模型較穩。</li>
       </ul>
     </div>
 
-    <!-- 硬體資訊 -->
+    <!-- Hardware 硬體資訊 -->
     <div class="tip-section">
-      <h4>🖥️ 硬體環境</h4>
+      <h4>🖥️ Hardware 硬體環境</h4>
       <ul>
-        <li><b>GPU</b>：NVIDIA GB10 (Blackwell) — 128GB 統一記憶體</li>
+        <li><b>GPU</b>: NVIDIA GB10 (Blackwell) — 128 GB unified memory 統一記憶體</li>
         <li><b>CUDA</b>：13.0 · Driver 580.173</li>
-        <li><b>ComfyUI</b>：最新版 + ComfyUI-Manager · 綁定 localhost:8188</li>
-        <li><b>量化格式</b>：NVFP4（Blackwell 原生）· FP8 · INT8 按模型選用</li>
+        <li><b>ComfyUI</b>: latest + ComfyUI-Manager · bound to localhost:8188 綁定本機</li>
+        <li><b>Quantisation 量化格式</b>: NVFP4 (Blackwell-native) · FP8 · INT8, chosen per model</li>
       </ul>
     </div>
   </details>
 
-  <!-- 結果 -->
+  <!-- Results 結果 -->
   <div class="grid" id="grid"></div>
 </main>
 
 <script>
+// Public mode: if the browser has a stored token (localStorage.compareToken), attach
+// the auth header to every /api/* request. Local mode needs none — leave it empty.
 // 對外模式：若瀏覽器存過 token（localStorage.compareToken），
 // 自動幫所有 /api/* 請求帶上認證標頭。本機模式不需要，留空即可。
 (()=>{const t=localStorage.getItem("compareToken");if(!t)return;
@@ -390,7 +394,7 @@ function renderSetup(){
     const el = document.createElement("div");
     el.className = "scard";
     el.innerHTML = `<b>${s.label}</b> ${badge("image")} ${badge("video")}
-      <div class="drop" data-m="${m}">拖入 API workflow JSON<br>或點此選檔</div>`;
+      <div class="drop" data-m="${m}">Drop an API workflow JSON 拖入 workflow JSON<br>or click to choose a file 或點此選檔</div>`;
     wrap.appendChild(el);
     const drop = el.querySelector(".drop");
     drop.addEventListener("click",()=>pickFile(m));
@@ -410,7 +414,7 @@ function renderChips(){
     const el = document.createElement("div");
     el.className = "mchip"+(ready?" ready":"")+(on?"":" off");
     el.innerHTML = `<span class="dot"></span>${LABELS[m]||m}`;
-    el.title = ready ? "已可比較" : `尚未匯入「${otype}」workflow`;
+    el.title = ready ? "Ready to compare 已可比較" : `No “${otype}” workflow imported yet 尚未匯入`;
     el.onclick = ()=>{ on?selected.delete(m):selected.add(m); renderChips(); };
     wrap.appendChild(el);
   });
@@ -422,16 +426,16 @@ function pickFile(m){
 }
 async function upload(file){
   const fd=new FormData(); fd.append("file",file);
-  $("#hint").textContent="匯入中…";
+  $("#hint").textContent="Importing 匯入中…";
   const r=await fetch("/api/import",{method:"POST",body:fd});
   const d=await r.json();
-  if(d.error){ $("#hint").innerHTML=`<span class="err">匯入失敗：${d.error}</span>`; return; }
+  if(d.error){ $("#hint").innerHTML=`<span class="err">Import failed 匯入失敗：${d.error}</span>`; return; }
   STATE=d.state;
-  $("#hint").textContent=`已匯入：${d.label} · ${d.type}` + (d.prompt_ok?"（已找到提示詞節點）":"（未找到提示詞節點，請在 workflow 內把正向提示詞設為 __PROMPT__）");
+  $("#hint").textContent=`Imported 已匯入：${d.label} · ${d.type}` + (d.prompt_ok?" (prompt node found 已找到提示詞節點)":" (no prompt node — set the positive prompt to __PROMPT__ in the workflow 未找到提示詞節點)");
   renderSetup(); renderChips();
 }
 
-// 輸出形式切換
+// Output type switch 輸出形式切換
 $("#typeSeg").querySelectorAll("button").forEach(b=>{
   b.onclick=()=>{ otype=b.dataset.t;
     $("#typeSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
@@ -618,35 +622,35 @@ function randPrompt(){
 $("#randPrompt").onclick=()=>{ $("#prompt").value=randPrompt(); };
 
 $("#capture").onclick=async()=>{
-  $("#capHint").textContent="擷取中…";
+  $("#capHint").textContent="Capturing 擷取中…";
   try{
     const r=await fetch("/api/capture"); const d=await r.json();
     if(d.error){ $("#capHint").innerHTML=`<span class="err">${d.error}</span>`; return; }
     STATE=d.state;
-    $("#capHint").innerHTML=`✅ 已擷取 <b>${d.label}</b>（${d.type}）`+
-      (d.prompt_ok?"，已找到提示詞節點":'，<span class="err">未找到提示詞節點</span>');
+    $("#capHint").innerHTML=`✅ Captured 已擷取 <b>${d.label}</b>（${d.type}）`+
+      (d.prompt_ok?" · prompt node found 已找到提示詞節點":' · <span class="err">no prompt node 未找到提示詞節點</span>');
     renderSetup(); renderChips();
-  }catch(e){ $("#capHint").innerHTML='<span class="err">擷取失敗（ComfyUI 沒開？）</span>'; }
+  }catch(e){ $("#capHint").innerHTML='<span class="err">Capture failed — is ComfyUI running? 擷取失敗（ComfyUI 沒開？）</span>'; }
 };
 
-// 停止
+// Stop 停止
 $("#stopAll").onclick=async()=>{
   try{
     await fetch("/api/stop",{method:"POST"});
-    $("#hint").innerHTML='<span class="ok">已停止所有任務</span>';
-  }catch(e){ $("#hint").innerHTML='<span class="err">停止失敗</span>'; }
+    $("#hint").innerHTML='<span class="ok">All jobs stopped 已停止所有任務</span>';
+  }catch(e){ $("#hint").innerHTML='<span class="err">Stop failed 停止失敗</span>'; }
 };
 
-// 生成
+// Generate 生成
 $("#go").onclick=async()=>{
   const prompt=$("#prompt").value.trim();
-  if(!prompt){ $("#hint").innerHTML='<span class="err">請先輸入 prompt</span>'; return; }
+  if(!prompt){ $("#hint").innerHTML='<span class="err">Enter a prompt first 請先輸入 prompt</span>'; return; }
   const models=ORDER.filter(m=>selected.has(m));
-  if(!models.length){ $("#hint").innerHTML='<span class="err">請至少選一個模型</span>'; return; }
+  if(!models.length){ $("#hint").innerHTML='<span class="err">Select at least one model 請至少選一個模型</span>'; return; }
   const seed=parseInt($("#seed").value||"0",10);
   newSeed();
-  $("#go").disabled=true; $("#hint").textContent="送出中…";
-  // 先擺好欄位
+  $("#go").disabled=true; $("#hint").textContent="Submitting 送出中…";
+  // Lay out the columns first 先擺好欄位
   const grid=$("#grid"); grid.innerHTML="";
   const cols={};
   const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -654,7 +658,7 @@ $("#go").onclick=async()=>{
     const c=document.createElement("div"); c.className="col";
     c.innerHTML=`<h3>${LABELS[m]}<span class="meta" style="font-size:11px">seed ${seed}</span></h3>
       <div class="usedPrompt" title="${esc(prompt)}">📝 ${esc(prompt)}</div>
-      <div class="body"><div class="spin"></div><div class="status">排隊中…</div></div>`;
+      <div class="body"><div class="spin"></div><div class="status">Queued 排隊中…</div></div>`;
     grid.appendChild(c); cols[m]=c;
   });
   const r=await fetch("/api/generate",{method:"POST",
@@ -665,11 +669,11 @@ $("#go").onclick=async()=>{
   if(d.error){ $("#hint").innerHTML=`<span class="err">${d.error}</span>`; return; }
   for(const m of models){
     const res=d.results[m], body=cols[m].querySelector(".body");
-    if(!res||res.error){ body.innerHTML=`<div class="status err">${res?res.error:"無回應"}</div>`; continue; }
+    if(!res||res.error){ body.innerHTML=`<div class="status err">${res?res.error:"No response 無回應"}</div>`; continue; }
     if(res.tokens){
       const t=res.tokens, mark=t.temporal_confirmed?"":"~";
       const tk=document.createElement("div"); tk.className="usedPrompt";
-      tk.textContent=`🧮 ${t.width}×${t.height} · ${t.frames}格${t.fps?`@${t.fps}fps`:""} · ${mark}${t.tokens.toLocaleString()} tokens`;
+      tk.textContent=`🧮 ${t.width}×${t.height} · ${t.frames} frames 格${t.fps?`@${t.fps}fps`:""} · ${mark}${t.tokens.toLocaleString()} tokens`;
       cols[m].querySelector(".usedPrompt").after(tk);
     }
     poll(m, res.prompt_id, cols[m], null);
@@ -682,31 +686,32 @@ async function poll(m, pid, col, t0){
     const r=await fetch("/api/status?id="+encodeURIComponent(pid));
     const d=await r.json();
     if(d.state==="queued"){
-      body.innerHTML=`<div class="spin"></div><div class="status">排隊中…</div>`;
+      body.innerHTML=`<div class="spin"></div><div class="status">Queued 排隊中…</div>`;
       setTimeout(()=>poll(m,pid,col,null),1500); return;
     }
     if(!t0) t0=Date.now();
     const secs=((Date.now()-t0)/1000).toFixed(0);
     if(d.state==="running"){
-      body.innerHTML=`<div class="spin"></div><div class="status">生成中… ${secs}s</div>`;
+      body.innerHTML=`<div class="spin"></div><div class="status">Generating 生成中… ${secs}s</div>`;
       setTimeout(()=>poll(m,pid,col,t0),1500); return;
     }
-    if(d.state==="error"){ body.innerHTML=`<div class="status err">${d.error||"生成失敗"}</div>`; return; }
+    if(d.state==="error"){ body.innerHTML=`<div class="status err">${d.error||"Generation failed 生成失敗"}</div>`; return; }
     if(d.state==="done"){
       const took=((Date.now()-t0)/1000).toFixed(1);
-      if(!d.media||!d.media.length){ body.innerHTML=`<div class="status">完成，但沒有輸出檔（${took}s）</div>`; return; }
+      if(!d.media||!d.media.length){ body.innerHTML=`<div class="status">Finished, but no output file 完成但沒有輸出檔（${took}s）</div>`; return; }
       body.innerHTML="";
       d.media.forEach(mm=>{
         const url=`/api/view?filename=${encodeURIComponent(mm.filename)}&subfolder=${encodeURIComponent(mm.subfolder)}&type=${encodeURIComponent(mm.type)}`;
-        // <img src> / <video src> 無法帶認證標頭，對外模式會 401。
-        // 改用 fetch 取回 blob（fetch 已被包裝成會自動帶 token），再轉成 object URL。
+        // <img src> / <video src> cannot carry auth headers, so public mode would 401.
+        // Fetch the blob instead (fetch already attaches the token) and use an object URL.
+        // <img src> / <video src> 無法帶認證標頭，對外模式會 401；改用 fetch 取 blob。
         const el = mm.kind==="video" ? document.createElement("video")
                                      : document.createElement("img");
         if(mm.kind==="video"){
           el.controls=true; el.autoplay=true; el.loop=true; el.muted=true; el.playsInline=true;
           el.className="media";
         }else{
-          el.className="media clickable"; el.title="點擊開啟原圖";
+          el.className="media clickable"; el.title="Click to open the full-size file 點擊開啟原圖";
         }
         body.appendChild(el);
         fetch(url).then(r=>{
@@ -718,7 +723,7 @@ async function poll(m, pid, col, t0){
           if(mm.kind!=="video") el.addEventListener("click",()=>window.open(obj,"_blank"));
         }).catch(err=>{
           el.replaceWith(Object.assign(document.createElement("div"),
-            {className:"status err", textContent:"產出檔載入失敗："+err.message}));
+            {className:"status err", textContent:"Failed to load the output file 產出檔載入失敗："+err.message}));
         });
       });
       const meta=document.createElement("div"); meta.className="meta";
@@ -729,9 +734,10 @@ async function poll(m, pid, col, t0){
   }catch(e){ setTimeout(()=>poll(m,pid,col,t0),2000); }
 }
 
+// Ask for the access token (needed in public mode, when this page is opened over the internet)
 // 提示使用者輸入密鑰（對外模式下，從公網開這個頁面時會需要）
 function askToken(){
-  const t=prompt("這台主機處於對外模式，需要存取密鑰。\n（密鑰在主機的 compare/.token）");
+  const t=prompt("This host is in public mode and needs an access token.\nThe token lives in compare/.token on the host.\n這台主機處於對外模式，需要存取密鑰（在主機的 compare/.token）。");
   if(t && t.trim()){ localStorage.setItem("compareToken",t.trim()); location.reload(); }
 }
 
@@ -739,24 +745,25 @@ async function pollQueue(){
   const dot=$("#qdot"), txt=$("#qtext");
   try{
     const r=await fetch("/api/queue");
+    // 401 means "no token", which is not the same as ComfyUI being down — keep them apart
     // 401 是「沒帶密鑰」，跟 ComfyUI 掛掉是兩回事，不可混為一談
     if(r.status===401){
       dot.className="qdot down";
-      txt.innerHTML='需要密鑰 <a href="#" id="tokLink" style="text-decoration:underline">輸入</a>';
+      txt.innerHTML='token required 需要密鑰 <a href="#" id="tokLink" style="text-decoration:underline">enter 輸入</a>';
       const a=$("#tokLink");
       if(a) a.onclick=e=>{e.preventDefault();askToken();};
       return setTimeout(pollQueue,10000);
     }
     const d=await r.json();
-    if(!d.ok){ dot.className="qdot down"; txt.textContent="ComfyUI 離線"; }
+    if(!d.ok){ dot.className="qdot down"; txt.textContent="ComfyUI offline 離線"; }
     else{
       const total=d.running+d.pending;
       dot.className="qdot "+(total?"busy":"idle");
       txt.textContent=total
-        ? `執行中 ${d.running} · 排隊 ${d.pending}`
-        : "佇列閒置";
+        ? `running 執行中 ${d.running} · queued 排隊 ${d.pending}`
+        : "queue idle 佇列閒置";
     }
-  }catch(e){ dot.className="qdot down"; txt.textContent="連線失敗"; }
+  }catch(e){ dot.className="qdot down"; txt.textContent="connection failed 連線失敗"; }
   setTimeout(pollQueue,3000);
 }
 pollQueue();

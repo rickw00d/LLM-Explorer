@@ -451,6 +451,9 @@ function mountLangPicker(id) {
     sel.appendChild(o);
   });
   sel.onchange = () => setLang(sel.value);
+  // The markup ships it hidden: an empty dropdown is worse than none at all on
+  // a page rendered without JavaScript.
+  sel.hidden = false;
 }
 
 // Turns an API error payload into a localised message. The server sends a stable

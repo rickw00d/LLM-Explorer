@@ -95,160 +95,160 @@ footer a{color:var(--teal)}
 <body>
 
 <div class="hero">
-  <select class="langsel" id="langSel" aria-label="Language" data-i18n-title="lang.label"></select>
+  <select class="langsel" id="langSel" aria-label="Language" title="Language" data-i18n-title="lang.label" hidden></select>
   <h1>LLM Explorer</h1>
-  <div class="tagline" data-i18n="hero.tagline"></div>
+  <div class="tagline" data-i18n="hero.tagline">Multi-model AI generation compared side by side — video &amp; images, fully local</div>
   <div class="badges">
     <span class="badge v">🎞️ LTX-2.5 · H3 · Wan</span>
     <span class="badge i">🖼️ FLUX.2 · Qwen · HiDream</span>
-    <span class="badge hw" data-i18n="hero.badgeHw"></span>
+    <span class="badge hw" data-i18n="hero.badgeHw">🖥️ NVIDIA GB10 · 128GB</span>
   </div>
 </div>
 
 <div class="container">
 
 <section>
-  <h2 data-i18n="feat.heading"></h2>
+  <h2 data-i18n="feat.heading">Features</h2>
   <div class="feature-grid">
     <div class="fcard">
-      <h3 data-i18n="feat.1.h"></h3>
-      <p data-i18n="feat.1.p"></p>
+      <h3 data-i18n="feat.1.h">⚡ Same prompt, side by side</h3>
+      <p data-i18n="feat.1.p">Same prompt and same seed, sent to several models in one click; results line up next to each other so quality differences are obvious.</p>
     </div>
     <div class="fcard">
-      <h3 data-i18n="feat.2.h"></h3>
-      <p data-i18n="feat.2.p"></p>
+      <h3 data-i18n="feat.2.h">🎲 Prompt generator</h3>
+      <p data-i18n="feat.2.p">A built-in random prompt engine: 12 subject descriptions, 30 actions, 18 scenes with matching audio, and a range of camera styles.</p>
     </div>
     <div class="fcard">
-      <h3 data-i18n="feat.3.h"></h3>
-      <p data-i18n="feat.3.p"></p>
+      <h3 data-i18n="feat.3.h">🔒 Fully offline</h3>
+      <p data-i18n="feat.3.p">Every model runs locally and nothing leaves the machine. Bound to localhost, so generation needs no internet connection.</p>
     </div>
     <div class="fcard">
-      <h3 data-i18n="feat.4.h"></h3>
-      <p data-i18n="feat.4.p"></p>
+      <h3 data-i18n="feat.4.h">📐 Multiple resolutions</h3>
+      <p data-i18n="feat.4.p">Video: SD / HD / FHD / 2K. Images: 1:1 / 4:3 / 3:4 / 16:9 / 9:16, tuned to each model's native resolution.</p>
     </div>
     <div class="fcard">
-      <h3 data-i18n="feat.5.h"></h3>
-      <p data-i18n="feat.5.p"></p>
+      <h3 data-i18n="feat.5.h">🚀 Tuned for GB10</h3>
+      <p data-i18n="feat.5.p">NVFP4 quantisation, Sol-Attn sparse attention, FirstBlockCache and TeaCache — H3 went from 1200s down to 298s.</p>
     </div>
     <div class="fcard">
-      <h3 data-i18n="feat.6.h"></h3>
-      <p data-i18n="feat.6.p"></p>
+      <h3 data-i18n="feat.6.h">💾 Live monitoring</h3>
+      <p data-i18n="feat.6.p">Each finished run reports elapsed time and VRAM usage, so resource cost stays visible. Click an image to open the full-size version.</p>
     </div>
   </div>
 </section>
 
 <section>
-  <h2 data-i18n="models.heading"></h2>
+  <h2 data-i18n="models.heading">Supported models</h2>
   <div class="model-grid">
     <div class="mcard vid">
-      <h4>LTX-2.5 <span class="type-tag vid" data-i18n="tag.video"></span></h4>
+      <h4>LTX-2.5 <span class="type-tag vid" data-i18n="tag.video">video</span></h4>
       <table>
-        <tr><td data-i18n="spec.params"></td><td>22B</td></tr>
-        <tr><td data-i18n="spec.precision"></td><td>FP8</td></tr>
-        <tr><td data-i18n="spec.hdspeed"></td><td data-i18n="spec.speed144"></td></tr>
-        <tr><td data-i18n="spec.licence"></td><td>Apache 2.0</td></tr>
+        <tr><td data-i18n="spec.params">Params</td><td>22B</td></tr>
+        <tr><td data-i18n="spec.precision">Precision</td><td>FP8</td></tr>
+        <tr><td data-i18n="spec.hdspeed">HD speed</td><td data-i18n="spec.speed144">~144s / 5s</td></tr>
+        <tr><td data-i18n="spec.licence">Licence</td><td>Apache 2.0</td></tr>
       </table>
     </div>
     <div class="mcard vid">
-      <h4>MiniMax H3 <span class="type-tag vid" data-i18n="tag.video"></span></h4>
+      <h4>MiniMax H3 <span class="type-tag vid" data-i18n="tag.video">video</span></h4>
       <table>
-        <tr><td data-i18n="spec.params"></td><td>~20B</td></tr>
-        <tr><td data-i18n="spec.precision"></td><td data-i18n="spec.nvfp4mixed"></td></tr>
-        <tr><td data-i18n="spec.hdspeed"></td><td data-i18n="spec.speed298"></td></tr>
-        <tr><td data-i18n="spec.licence"></td><td data-i18n="spec.minimaxOpen"></td></tr>
+        <tr><td data-i18n="spec.params">Params</td><td>~20B</td></tr>
+        <tr><td data-i18n="spec.precision">Precision</td><td data-i18n="spec.nvfp4mixed">NVFP4 mixed</td></tr>
+        <tr><td data-i18n="spec.hdspeed">HD speed</td><td data-i18n="spec.speed298">~298s / 5s</td></tr>
+        <tr><td data-i18n="spec.licence">Licence</td><td data-i18n="spec.minimaxOpen">MiniMax open</td></tr>
       </table>
     </div>
     <div class="mcard vid">
-      <h4>Wan 2.2 <span class="type-tag vid" data-i18n="tag.video"></span></h4>
+      <h4>Wan 2.2 <span class="type-tag vid" data-i18n="tag.video">video</span></h4>
       <table>
-        <tr><td data-i18n="spec.params"></td><td>14B</td></tr>
-        <tr><td data-i18n="spec.precision"></td><td>FP8</td></tr>
-        <tr><td data-i18n="spec.hdspeed"></td><td data-i18n="spec.notMeasured"></td></tr>
-        <tr><td data-i18n="spec.licence"></td><td>Apache 2.0</td></tr>
+        <tr><td data-i18n="spec.params">Params</td><td>14B</td></tr>
+        <tr><td data-i18n="spec.precision">Precision</td><td>FP8</td></tr>
+        <tr><td data-i18n="spec.hdspeed">HD speed</td><td data-i18n="spec.notMeasured">not measured</td></tr>
+        <tr><td data-i18n="spec.licence">Licence</td><td>Apache 2.0</td></tr>
       </table>
     </div>
     <div class="mcard img">
-      <h4>FLUX.2 Dev <span class="type-tag img" data-i18n="tag.image"></span></h4>
+      <h4>FLUX.2 Dev <span class="type-tag img" data-i18n="tag.image">image</span></h4>
       <table>
-        <tr><td data-i18n="spec.params"></td><td>32B</td></tr>
-        <tr><td data-i18n="spec.precision"></td><td data-i18n="spec.nvfp4mixed"></td></tr>
-        <tr><td data-i18n="spec.steps"></td><td>10</td></tr>
-        <tr><td data-i18n="spec.licence"></td><td>Apache 2.0</td></tr>
+        <tr><td data-i18n="spec.params">Params</td><td>32B</td></tr>
+        <tr><td data-i18n="spec.precision">Precision</td><td data-i18n="spec.nvfp4mixed">NVFP4 mixed</td></tr>
+        <tr><td data-i18n="spec.steps">Steps</td><td>10</td></tr>
+        <tr><td data-i18n="spec.licence">Licence</td><td>Apache 2.0</td></tr>
       </table>
     </div>
     <div class="mcard img">
-      <h4>Qwen-Image 2512 <span class="type-tag img" data-i18n="tag.image"></span></h4>
+      <h4>Qwen-Image 2512 <span class="type-tag img" data-i18n="tag.image">image</span></h4>
       <table>
-        <tr><td data-i18n="spec.params"></td><td>20B</td></tr>
-        <tr><td data-i18n="spec.precision"></td><td>FP8</td></tr>
-        <tr><td data-i18n="spec.steps"></td><td>30 (CFG=1)</td></tr>
-        <tr><td data-i18n="spec.licence"></td><td>Apache 2.0</td></tr>
+        <tr><td data-i18n="spec.params">Params</td><td>20B</td></tr>
+        <tr><td data-i18n="spec.precision">Precision</td><td>FP8</td></tr>
+        <tr><td data-i18n="spec.steps">Steps</td><td>30 (CFG=1)</td></tr>
+        <tr><td data-i18n="spec.licence">Licence</td><td>Apache 2.0</td></tr>
       </table>
     </div>
     <div class="mcard img">
-      <h4>HiDream-I1 Dev <span class="type-tag img" data-i18n="tag.image"></span></h4>
+      <h4>HiDream-I1 Dev <span class="type-tag img" data-i18n="tag.image">image</span></h4>
       <table>
-        <tr><td data-i18n="spec.params"></td><td>17B</td></tr>
-        <tr><td data-i18n="spec.precision"></td><td>FP8</td></tr>
-        <tr><td data-i18n="spec.steps"></td><td>20 (LCM)</td></tr>
-        <tr><td data-i18n="spec.licence"></td><td>MIT</td></tr>
+        <tr><td data-i18n="spec.params">Params</td><td>17B</td></tr>
+        <tr><td data-i18n="spec.precision">Precision</td><td>FP8</td></tr>
+        <tr><td data-i18n="spec.steps">Steps</td><td>20 (LCM)</td></tr>
+        <tr><td data-i18n="spec.licence">Licence</td><td>MIT</td></tr>
       </table>
     </div>
   </div>
 </section>
 
 <section>
-  <h2 data-i18n="bench.heading"></h2>
+  <h2 data-i18n="bench.heading">Benchmarks</h2>
   <table class="perf-table">
     <thead>
-      <tr><th data-i18n="bench.model"></th><th data-i18n="bench.type"></th><th>SD (860×480)</th><th>HD (1376×768)</th><th>FHD (1920×1080)</th></tr>
+      <tr><th data-i18n="bench.model">Model</th><th data-i18n="bench.type">Type</th><th>SD (860×480)</th><th>HD (1376×768)</th><th>FHD (1920×1080)</th></tr>
     </thead>
     <tbody>
-      <tr><td>LTX-2.5</td><td data-i18n="bench.video5s"></td><td>—</td><td class="fast">144s</td><td>—</td></tr>
-      <tr><td>MiniMax H3</td><td data-i18n="bench.video5s"></td><td>—</td><td class="med">298s</td><td class="med">772s</td></tr>
-      <tr><td>FLUX.2 Dev</td><td data-i18n="bench.image"></td><td colspan="3" style="text-align:center" data-i18n="bench.flux"></td></tr>
-      <tr><td>Qwen-Image</td><td data-i18n="bench.image"></td><td colspan="3" style="text-align:center" data-i18n="bench.qwen"></td></tr>
-      <tr><td>HiDream-I1</td><td data-i18n="bench.image"></td><td colspan="3" style="text-align:center" data-i18n="bench.hidream"></td></tr>
+      <tr><td>LTX-2.5</td><td data-i18n="bench.video5s">video 5s</td><td>—</td><td class="fast">144s</td><td>—</td></tr>
+      <tr><td>MiniMax H3</td><td data-i18n="bench.video5s">video 5s</td><td>—</td><td class="med">298s</td><td class="med">772s</td></tr>
+      <tr><td>FLUX.2 Dev</td><td data-i18n="bench.image">image</td><td colspan="3" style="text-align:center" data-i18n="bench.flux">~57s (NVFP4, 10 steps)</td></tr>
+      <tr><td>Qwen-Image</td><td data-i18n="bench.image">image</td><td colspan="3" style="text-align:center" data-i18n="bench.qwen">~40s (FP8, 30 steps, CFG=1)</td></tr>
+      <tr><td>HiDream-I1</td><td data-i18n="bench.image">image</td><td colspan="3" style="text-align:center" data-i18n="bench.hidream">~35s (FP8, 20 steps, LCM)</td></tr>
     </tbody>
   </table>
-  <p style="font-size:12px;color:var(--mut);margin-top:8px" data-i18n="bench.note"></p>
+  <p style="font-size:12px;color:var(--mut);margin-top:8px" data-i18n="bench.note">* Measured on NVIDIA GB10 (DGX Spark), 128 GB unified memory. Image timings are estimates.</p>
 </section>
 
 <section>
-  <h2 data-i18n="arch.heading"></h2>
+  <h2 data-i18n="arch.heading">Architecture</h2>
   <div class="arch">
     <pre>
 <b>LLM Explorer/</b>
 ├── <span class="teal">chatbot/</span>          Ollama + Open WebUI (Docker)     → localhost:8080
-│   ├── start.sh        <span data-i18n="arch.chatbot"></span>
-│   └── models.txt      <span data-i18n="arch.models"></span>
+│   ├── start.sh        <span data-i18n="arch.chatbot">multi-LLM chat UI (Qwen3 / Gemma3)</span>
+│   └── models.txt      <span data-i18n="arch.models">model list</span>
 │
 ├── <span class="teal">comfyui/</span>          ComfyUI + Manager (venv)          → localhost:8188
-│   ├── setup.sh        <span data-i18n="arch.setup"></span>
-│   └── workflows/      <span data-i18n="arch.workflows"></span>
+│   ├── setup.sh        <span data-i18n="arch.setup">PyTorch cu130 + aarch64 environment</span>
+│   └── workflows/      <span data-i18n="arch.workflows">official templates + comparison notes</span>
 │
-├── <span class="acc">compare/</span>          <span data-i18n="arch.compare"></span>  → localhost:8890
-│   ├── server.py       <span data-i18n="arch.server"></span>
-│   ├── index.html      <span data-i18n="arch.index"></span>
-│   └── workflows/      <span data-i18n="arch.cworkflows"></span>
+├── <span class="acc">compare/</span>          <span data-i18n="arch.compare">comparison tool (Python)</span>  → localhost:8890
+│   ├── server.py       <span data-i18n="arch.server">API proxy + workflow injection</span>
+│   ├── index.html      <span data-i18n="arch.index">comparison UI + inline help</span>
+│   └── workflows/      <span data-i18n="arch.cworkflows">API-format workflows for 6 models</span>
 │
-└── <span class="plum">docs/</span>             <span data-i18n="arch.docs"></span>
+└── <span class="plum">docs/</span>             <span data-i18n="arch.docs">documentation + GitHub Pages</span>
     </pre>
   </div>
 </section>
 
 <section>
-  <h2 data-i18n="hw.heading"></h2>
+  <h2 data-i18n="hw.heading">Hardware</h2>
   <div class="hw-specs">
     <div class="hw-item">
       <div class="icon">🎮</div>
       <div class="val">GB10</div>
-      <div class="lbl" data-i18n="hw.gpu"></div>
+      <div class="lbl" data-i18n="hw.gpu">NVIDIA Blackwell GPU</div>
     </div>
     <div class="hw-item">
       <div class="icon">🧠</div>
       <div class="val">128 GB</div>
-      <div class="lbl" data-i18n="hw.mem"></div>
+      <div class="lbl" data-i18n="hw.mem">Unified memory</div>
     </div>
     <div class="hw-item">
       <div class="icon">⚡</div>
@@ -258,29 +258,29 @@ footer a{color:var(--teal)}
     <div class="hw-item">
       <div class="icon">💿</div>
       <div class="val">916 GB</div>
-      <div class="lbl" data-i18n="hw.disk"></div>
+      <div class="lbl" data-i18n="hw.disk">NVMe SSD</div>
     </div>
   </div>
 </section>
 
 <section>
-  <h2 data-i18n="opt.heading"></h2>
+  <h2 data-i18n="opt.heading">Optimisations</h2>
   <div class="feature-grid">
     <div class="fcard">
-      <h3 data-i18n="opt.1.h"></h3>
-      <p data-i18n="opt.1.p"></p>
+      <h3 data-i18n="opt.1.h">🔢 NVFP4 quantisation</h3>
+      <p data-i18n="opt.1.p">Blackwell's native 4-bit mixed-precision format. FLUX.2 drops from 34 GB to 22 GB, memory traffic falls by 35%, and throughput rises roughly 30-40%.</p>
     </div>
     <div class="fcard">
-      <h3 data-i18n="opt.2.h"></h3>
-      <p data-i18n="opt.2.p"></p>
+      <h3 data-i18n="opt.2.h">⚡ Sol-Attn sparse attention</h3>
+      <p data-i18n="opt.2.p">H3-specific speed-up. tau=1.3 is stable at HD; at higher resolutions watch the token count.</p>
     </div>
     <div class="fcard">
-      <h3 data-i18n="opt.3.h"></h3>
-      <p data-i18n="opt.3.p"></p>
+      <h3 data-i18n="opt.3.h">🧊 FirstBlockCache</h3>
+      <p data-i18n="opt.3.p">Caches the first transformer block's output to avoid recomputation. Threshold 0.1, at most 2 consecutive hits.</p>
     </div>
     <div class="fcard">
-      <h3 data-i18n="opt.4.h"></h3>
-      <p data-i18n="opt.4.p"></p>
+      <h3 data-i18n="opt.4.h">🍵 TeaCache</h3>
+      <p data-i18n="opt.4.p">H3-specific temporal cache: when the difference between adjacent steps falls below the threshold, the step is skipped, speeding up the denoising loop.</p>
     </div>
   </div>
 </section>
@@ -288,7 +288,7 @@ footer a{color:var(--teal)}
 </div>
 
 <footer>
-  <p data-i18n="footer.built"></p>
+  <p data-i18n="footer.built">LLM Explorer — Built for <a href="https://www.nvidia.com/en-us/desktops/dgx-spark/">NVIDIA DGX Spark</a> (GB10)</p>
   <p style="margin-top:6px">
     <a href="https://github.com/rickw00d/LLM-Explorer">GitHub</a>
   </p>

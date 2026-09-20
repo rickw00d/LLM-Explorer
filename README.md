@@ -156,6 +156,33 @@ its three-layer security model is documented in [`space/README.md`](space/README
 
 ---
 
+## 5. Start at boot (optional)
+
+```bash
+bash systemd/install.sh
+```
+
+Installs two systemd **user** services — `comfyui.service` and
+`llm-compare.service` — enables lingering so they start at boot without a login,
+and retires the older all-in-one `llm-explorer.service` if one is installed.
+
+```bash
+systemctl --user status comfyui llm-compare
+journalctl --user -u comfyui -f
+systemctl --user restart llm-compare
+```
+
+Both units run `run.sh`, which holds the launch flags and `exec`s, so systemd
+supervises the real process rather than a wrapper. Open WebUI needs nothing here:
+its container already carries `--restart unless-stopped`.
+
+> If you write a unit by hand, quote the path in `ExecStart`. systemd splits that
+> line on whitespace, so a repository path containing a space becomes a different
+> command and the service fails with `status=203/EXEC`, restarting forever.
+> `systemd/install.sh` writes the quotes for you.
+
+---
+
 ## Things to keep in mind
 
 - The platform is **aarch64 + Blackwell sm_121, so only CUDA 13 / cu130 packages work** (see notes).
@@ -188,12 +215,13 @@ LLM-Explorer/
 ├── chatbot/                    # Open WebUI + Ollama (Docker)
 │   ├── start.sh  stop.sh  pull-models.sh  models.txt
 ├── comfyui/                    # ComfyUI (native venv)
-│   ├── setup.sh  start.sh  stop.sh  download-models.sh
+│   ├── setup.sh  start.sh  run.sh  stop.sh  download-models.sh
 │   └── workflows/              # comparison workflow notes + your exported .json
 ├── tools/check-i18n.py         # translation-table consistency check
 ├── compare/                    # comparison tool
-│   ├── server.py  index.html  i18n.js  start.sh  stop.sh  tunnel.sh
+│   ├── server.py  index.html  i18n.js  start.sh  run.sh  stop.sh  tunnel.sh
 │   └── workflows/              # captured per-model workflows
+├── systemd/                    # user services for starting at boot (install.sh)
 ├── space/                      # HuggingFace Space frontend
 └── docs/                       # documentation + GitHub Pages (index.html, i18n.js)
 ```

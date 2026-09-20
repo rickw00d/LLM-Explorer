@@ -1,0 +1,21 @@
+[Unit]
+Description=LLM Explorer model comparison server
+Documentation=https://github.com/rickw00d/LLM-Explorer
+# The server proxies ComfyUI, so start it after — but it comes up fine on its own
+# and serves the page while ComfyUI is still loading.
+After=network-online.target comfyui.service
+Wants=network-online.target comfyui.service
+
+[Service]
+Type=simple
+WorkingDirectory=@COMPARE_DIR@
+ExecStart=@COMPARE_RUN@
+Restart=on-failure
+RestartSec=10
+# Optional: put COMPARE_HOST / COMPARE_PORT / COMPARE_TOKEN here. The leading dash
+# means the unit still starts when the file does not exist. A token in compare/.token
+# is picked up by run.sh without any of this.
+EnvironmentFile=-@COMPARE_ENV@
+
+[Install]
+WantedBy=default.target

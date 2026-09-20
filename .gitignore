@@ -29,12 +29,16 @@ nohup.out
 # PID files
 *.pid
 
-# 密鑰 —— 絕對不可進版控
+# Secrets — never commit these
 .token
 *.token
+# systemd EnvironmentFile: local COMPARE_* overrides, may hold a token
+compare/.env
 cert.pem
 .cloudflared/
 
 # Claude settings
 .claude/
+
+# Local credential store — never commit
 Secret/

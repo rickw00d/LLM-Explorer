@@ -3,8 +3,6 @@
 # no --listen). Logs to comfyui.log, PID in comfyui.pid; stop it with ./stop.sh.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VENV="$SCRIPT_DIR/comfyui-env"
-COMFY="$SCRIPT_DIR/ComfyUI"
 LOG="$SCRIPT_DIR/comfyui.log"
 PIDF="$SCRIPT_DIR/comfyui.pid"
 
@@ -25,13 +23,13 @@ if pid_alive "$PIDF" "main.py"; then
 fi
 rm -f "$PIDF"
 
-# shellcheck disable=SC1091
-source "$VENV/bin/activate"
-cd "$COMFY"
-
 echo ">> Starting ComfyUI in the background… log: $LOG"
-nohup python main.py --use-sage-attention --cache-none --enable-triton-backend >"$LOG" 2>&1 &
+# run.sh holds the launch flags and execs, so this PID is the real ComfyUI process.
+nohup "$SCRIPT_DIR/run.sh" >"$LOG" 2>&1 &
 echo $! > "$PIDF"
 sleep 2
+if ! pid_alive "$PIDF" "main.py"; then
+  echo "!! ComfyUI died on startup. Last lines of the log:"; tail -n 20 "$LOG"; exit 1
+fi
 echo ">> PID $(cat "$PIDF"). Open your browser at http://localhost:8188"
 echo ">> Follow the log: tail -f \"$LOG\""

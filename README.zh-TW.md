@@ -148,6 +148,32 @@ cd compare && ./start.sh
 
 ---
 
+## 5. 開機自動啟動（選用）
+
+```bash
+bash systemd/install.sh
+```
+
+會安裝兩個 systemd **user** service（`comfyui.service` 與 `llm-compare.service`），
+啟用 lingering 讓它們開機就跑、不必先登入桌面，並停用舊版的單一
+`llm-explorer.service`（若有安裝）。
+
+```bash
+systemctl --user status comfyui llm-compare
+journalctl --user -u comfyui -f
+systemctl --user restart llm-compare
+```
+
+兩個 unit 都執行 `run.sh`；啟動參數寫在裡面，而且用 `exec`，所以 systemd 監管的是
+真正的行程而不是外層包裝。Open WebUI 不需要另外設定，它的容器本身就帶了
+`--restart unless-stopped`。
+
+> 自己手寫 unit 的話，`ExecStart` 的路徑一定要加引號。systemd 會以空白切分那一行，
+> 所以路徑只要含空格就會變成另一個指令，服務以 `status=203/EXEC` 失敗並無限重試。
+> `systemd/install.sh` 會幫你把引號加好。
+
+---
+
 ## 重要提醒
 
 - **架構是 aarch64 + Blackwell sm_121，只能用 CUDA 13 / cu130 的套件**（詳見 notes）。
@@ -176,11 +202,12 @@ LLM-Explorer/
 ├── chatbot/                    # Open WebUI + Ollama（Docker）
 │   ├── start.sh  stop.sh  pull-models.sh  models.txt
 ├── comfyui/                    # ComfyUI（原生 venv）
-│   ├── setup.sh  start.sh  stop.sh  download-models.sh
+│   ├── setup.sh  start.sh  run.sh  stop.sh  download-models.sh
 │   └── workflows/              # 比對 workflow 說明 + 你匯出的 .json
 ├── compare/                    # 比較工具
-│   ├── server.py  index.html  i18n.js  start.sh  stop.sh  tunnel.sh
+│   ├── server.py  index.html  i18n.js  start.sh  run.sh  stop.sh  tunnel.sh
 │   └── workflows/              # 擷取到的各模型 workflow
+├── systemd/                    # 開機自動啟動用的 user service（install.sh）
 ├── space/                      # HuggingFace Space 前端
 └── docs/                       # 說明文件 + GitHub Pages（index.html、i18n.js）
 ```

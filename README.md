@@ -6,15 +6,18 @@ Three local services on a **GB10 Grace Blackwell** box (128 GB unified memory):
 chat with multiple LLMs, generate images and video with ComfyUI, and compare
 several generative models side by side from a single prompt.
 
-| Service | Purpose | URL (local only) | Directory |
+| Service | Purpose | URL | Directory |
 |---|---|---|---|
 | **Open WebUI + Ollama** | Multi-LLM chat, hot-swappable models | http://localhost:8080 | [`chatbot/`](chatbot/) |
 | **ComfyUI** | Image/video generation backend | http://localhost:8188 | [`comfyui/`](comfyui/) |
 | **Model Comparison Tool** | One prompt, several models side by side (calls the ComfyUI API) | http://localhost:8890 | [`compare/`](compare/) |
 | **HuggingFace Space frontend** | Optional remote UI that tunnels back to this machine | — | [`space/`](space/) |
 
-> All three services bind to **127.0.0.1 only** by default. Public exposure is
-> opt-in and requires a shared token — see [Public access](#4-public-access-optional).
+> Open WebUI and ComfyUI bind to **127.0.0.1 only**. The comparison tool binds
+> **`0.0.0.0` (every interface)** by default, so other devices on your LAN can reach it;
+> set `COMPARE_HOST=127.0.0.1` to keep it on loopback. Without a token, anyone who can
+> reach port 8890 can push arbitrary workflows into ComfyUI — set one
+> (see [Public access](#4-public-access-optional)) or firewall the port.
 
 Hardware limits and memory management: [`docs/notes.md`](docs/notes.md).
 
@@ -106,9 +109,9 @@ Chinese and Simplified Chinese; it follows your browser language and remembers
 whatever you pick from the selector.
 
 ```bash
-cd compare && ./start.sh        # requires ComfyUI to be running
+cd compare && ./start.sh        # starts ComfyUI too, if it is not already up
                                 # → http://localhost:8890
-./stop.sh                       # stop
+./stop.sh                       # stops both
 ```
 
 First run: on each model card press **🎯 Capture from ComfyUI** (first open that
@@ -121,7 +124,7 @@ Environment variables:
 | Variable | Default | Meaning |
 |---|---|---|
 | `COMFY_URL` | `http://127.0.0.1:8188` | ComfyUI backend |
-| `COMPARE_HOST` / `COMPARE_PORT` | `127.0.0.1` / `8890` | bind address |
+| `COMPARE_HOST` / `COMPARE_PORT` | `0.0.0.0` / `8890` | bind address — `0.0.0.0` is every interface; use `127.0.0.1` for loopback only |
 | `COMPARE_TOKEN` | *(empty)* | set it to switch on public mode |
 | `COMPARE_MAX_PENDING` / `COMPARE_MAX_MODELS` / `COMPARE_MAX_PROMPT` | `8` / `3` / `2000` | public-mode limits |
 

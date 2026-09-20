@@ -20,7 +20,7 @@ WF_DIR = os.path.join(HERE, "workflows")
 os.makedirs(WF_DIR, exist_ok=True)
 
 COMFY = os.environ.get("COMFY_URL", "http://127.0.0.1:8188")
-HOST = os.environ.get("COMPARE_HOST", "127.0.0.1")
+HOST = os.environ.get("COMPARE_HOST", "0.0.0.0")
 PORT = int(os.environ.get("COMPARE_PORT", "8890"))
 CLIENT_ID = str(uuid.uuid4())
 
@@ -30,7 +30,6 @@ CLIENT_ID = str(uuid.uuid4())
 #   2. admin endpoints (they write files / can push arbitrary workflows into ComfyUI) are blocked
 #   3. resolution allow-list, queue cap and model-count cap apply
 # No token = local mode, behaving exactly as before.
-# COMPARE_TOKEN /api/* X-Compare-Token
 TOKEN = os.environ.get("COMPARE_TOKEN", "").strip()
 PUBLIC = bool(TOKEN)
 ADMIN_OK = os.environ.get("COMPARE_ADMIN", "") == "1"
@@ -40,7 +39,6 @@ MAX_PROMPT = int(os.environ.get("COMPARE_MAX_PROMPT", "2000"))
 
 # Resolutions allowed in public mode (2K and above excluded: at high token counts H3
 # produces artefacts or runs out of memory)
-# 2K H3 token OOM
 ALLOWED_RES = {
     "video": {"860x480", "1376x768", "1920x1080"},
     "image": {"1024x1024", "1152x896", "896x1152", "1344x768", "768x1344"},
@@ -48,22 +46,22 @@ ALLOWED_RES = {
 
 # These endpoints write files or let a caller push an arbitrary workflow into ComfyUI
 # (i.e. read/write anywhere on this machine). Blocked in public mode unless COMPARE_ADMIN=1.
-# workflow ComfyUI
-ADMIN_PATHS = {"/api/import", "/api/savewf", "/api/capture", "/api/uitpl", "/api/stop"}
+# /api/stop is deliberately NOT in this set: cancelling your own run is not a write
+# primitive, and the remote UI needs it.
+ADMIN_PATHS = {"/api/import", "/api/savewf", "/api/capture", "/api/uitpl"}
 
 # ComfyUI's bundled workflow template directory (importable when this server runs in the comfyui venv)
-# ComfyUI workflow server comfyui venv import
 try:
     import comfyui_workflow_templates_json as _tj
     TPL_DIR = os.path.join(os.path.dirname(_tj.__file__), "templates")
 except Exception:
     TPL_DIR = None
 
-MODELS = ["ltx", "h3", "wan", "flux2", "qwen", "hidream"]
+MODELS = ["ltx", "h3", "h3t8", "h3t4", "wan", "flux2", "qwen", "hidream"]
 MODEL_LABEL = {"ltx": "LTX-2.5", "wan": "Wan 2.2", "h3": "MiniMax H3",
+               "h3t8": "H3 Turbo-8", "h3t4": "H3 Turbo-4",
                "flux2": "FLUX.2 Dev", "qwen": "Qwen-Image", "hidream": "HiDream-I1"}
 # Identify the model from diffusion_models / encoder filenames (most distinctive first)
-# diffusion_models / encoder
 SIGNATURES = [
     ("ltx", ["ltx-2.5", "ltx2", "ltx-2", "ltx_"]),
     ("h3",  ["minimax_h3", "minimax", "hailuo", "_h3_"]),
@@ -152,11 +150,9 @@ def detect_type(graph, model):
         # Many frames usually still means video, but be conservative: SaveImage only → image
         return "image"
     # Fallback: LTX / H3 are video models, and Wan defaults to video
-    # LTX / H3 Wan
     return "video"
 
 # The positive prompt may live in these input names (in order of preference); negative_* excluded
-# input negative_*
 POS_KEYS = ("text", "prompt", "positive_prompt", "text_g", "text_l", "value")
 
 def _pos_key(node):
@@ -187,7 +183,6 @@ def trace_to_text(graph, nid, seen):
 
 def find_positive_node(graph):
     # 1) Walk back from the sampler's positive link to the node holding the prompt
-    # 1) sampler positive
     for n in graph.values():
         pv = (n.get("inputs", {}) or {}).get("positive")
         if isinstance(pv, list) and pv:
@@ -195,10 +190,8 @@ def find_positive_node(graph):
             if r:
                 return r
     # 2) Dedicated wrapper nodes whose input is simply prompt / text (skip negative-only ones)
-    # 2) input prompt / text negative
     cand = [nid for nid, n in graph.items() if _pos_key(n)]
     # Prefer text-encode / video-wrapper class types whose _meta title has no 'negative'
-    # class_type / _meta negative
     def not_negative(nid):
         title = ((graph[nid].get("_meta", {}) or {}).get("title", "") or "").lower()
         return "negativ" not in title
@@ -227,7 +220,6 @@ def inject(graph, prompt, seed, positive_nid, resolution=None):
                 if isinstance(v, str) and "__PROMPT__" in v:
                     ins[k] = v.replace("__PROMPT__", prompt); ok = True
     # seed: set every literal seed / noise_seed to the given value
-    # seed seed / noise_seed
     for n in graph.values():
         ins = n.get("inputs", {}) or {}
         for key in ("seed", "noise_seed"):
@@ -252,7 +244,6 @@ def inject(graph, prompt, seed, positive_nid, resolution=None):
 # Temporal down-sampling factor of each model's video VAE (used to estimate token counts).
 # h3=4 is cross-checked against the GB10 tuning guide's example (124 frames -> 31,992 tokens);
 # the rest are estimates from common values.
-# VAE token h3=4
 TEMPORAL_DOWNSAMPLE = {"h3": 4, "ltx": 8, "wan": 4}
 TEMPORAL_CONFIRMED = {"h3"}
 

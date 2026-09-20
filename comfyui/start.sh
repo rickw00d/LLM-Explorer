@@ -8,10 +8,22 @@ COMFY="$SCRIPT_DIR/ComfyUI"
 LOG="$SCRIPT_DIR/comfyui.log"
 PIDF="$SCRIPT_DIR/comfyui.pid"
 
-if [[ -f "$PIDF" ]] && kill -0 "$(cat "$PIDF")" 2>/dev/null; then
+# A PID file alone proves nothing: a reboot recycles low PIDs, so the number left over
+# from the last run often belongs to some unrelated daemon. Confirm the command matches.
+pid_alive() {
+  local pidf="$1" pat="$2" pid
+  [[ -f "$pidf" ]] || return 1
+  pid="$(cat "$pidf" 2>/dev/null)" || return 1
+  [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+  kill -0 "$pid" 2>/dev/null || return 1
+  tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | grep -q -- "$pat" || return 1
+}
+
+if pid_alive "$PIDF" "main.py"; then
   echo ">> ComfyUI is already running (PID $(cat "$PIDF")). http://localhost:8188"
   exit 0
 fi
+rm -f "$PIDF"
 
 # shellcheck disable=SC1091
 source "$VENV/bin/activate"

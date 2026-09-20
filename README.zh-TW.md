@@ -5,15 +5,17 @@
 在一台 **GB10 Grace Blackwell**（128GB 統一記憶體）上跑三套本地服務：多 LLM 聊天、
 用 ComfyUI 生圖／生影片，以及「同一個 prompt、多模型並排比較」的網頁工具。
 
-| 服務 | 用途 | 網址（僅本機） | 目錄 |
+| 服務 | 用途 | 網址 | 目錄 |
 |---|---|---|---|
 | **Open WebUI + Ollama** | 多 LLM 聊天，可熱切換模型 | http://localhost:8080 | [`chatbot/`](chatbot/) |
 | **ComfyUI** | 生圖／生影片後端 | http://localhost:8188 | [`comfyui/`](comfyui/) |
 | **模型比較工具** | 同一個 prompt，多模型並排比較（呼叫 ComfyUI API） | http://localhost:8890 | [`compare/`](compare/) |
 | **HuggingFace Space 前端** | 選用的遠端介面，透過通道連回本機 | — | [`space/`](space/) |
 
-> 三個服務預設都**只綁定 127.0.0.1**。對外開放需自行啟用，且必須設共享密鑰，
-> 見[對外開放](#4-對外開放選用)。
+> Open WebUI 與 ComfyUI **只綁定 127.0.0.1**。模型比較工具預設綁定
+> **`0.0.0.0`（所有網路介面）**，同網段的其他裝置可以直接連上；想限回本機，
+> 設 `COMPARE_HOST=127.0.0.1`。沒有密鑰時，任何連得到 8890 的人都能把任意
+> workflow 推進你的 ComfyUI —— 請設密鑰（見[對外開放](#4-對外開放選用)）或用防火牆擋掉這個埠。
 
 硬體限制與記憶體管理見 [`docs/notes.zh-TW.md`](docs/notes.zh-TW.md)。
 
@@ -104,9 +106,9 @@ cd comfyui
 也會記住你在語言選單中的選擇。
 
 ```bash
-cd compare && ./start.sh        # 需 ComfyUI 已在跑
+cd compare && ./start.sh        # ComfyUI 沒在跑的話會一併啟動
                                 # → http://localhost:8890
-./stop.sh                       # 停止
+./stop.sh                       # 兩個一起停
 ```
 
 首次使用：在每個模型的卡片按 **🎯 從 ComfyUI 擷取**（先在 ComfyUI 開該模型 Template 按一次 Run），
@@ -117,7 +119,7 @@ cd compare && ./start.sh        # 需 ComfyUI 已在跑
 | 變數 | 預設 | 意義 |
 |---|---|---|
 | `COMFY_URL` | `http://127.0.0.1:8188` | ComfyUI 後端位址 |
-| `COMPARE_HOST` / `COMPARE_PORT` | `127.0.0.1` / `8890` | 綁定位址 |
+| `COMPARE_HOST` / `COMPARE_PORT` | `0.0.0.0` / `8890` | 綁定位址 —— `0.0.0.0` 是所有介面，只要本機請設 `127.0.0.1` |
 | `COMPARE_TOKEN` | *(空)* | 設了就進入對外模式 |
 | `COMPARE_MAX_PENDING` / `COMPARE_MAX_MODELS` / `COMPARE_MAX_PROMPT` | `8` / `3` / `2000` | 對外模式上限 |
 

@@ -20,7 +20,7 @@ WF_DIR = os.path.join(HERE, "workflows")
 os.makedirs(WF_DIR, exist_ok=True)
 
 COMFY = os.environ.get("COMFY_URL", "http://127.0.0.1:8188")
-HOST = os.environ.get("COMPARE_HOST", "127.0.0.1")
+HOST = os.environ.get("COMPARE_HOST", "0.0.0.0")
 PORT = int(os.environ.get("COMPARE_PORT", "8890"))
 CLIENT_ID = str(uuid.uuid4())
 
@@ -45,7 +45,7 @@ ALLOWED_RES = {
 
 # 這些端點會寫入檔案或讓人塞任意 workflow 進 ComfyUI（＝可讀寫本機任意路徑），
 # 對外模式預設全部封鎖，除非明確設定 COMPARE_ADMIN=1。
-ADMIN_PATHS = {"/api/import", "/api/savewf", "/api/capture", "/api/uitpl", "/api/stop"}
+ADMIN_PATHS = {"/api/import", "/api/savewf", "/api/capture", "/api/uitpl"}
 
 # ComfyUI 內建 workflow 範本目錄（server 跑在 comfyui venv 下即可 import 到）
 try:
@@ -54,8 +54,9 @@ try:
 except Exception:
     TPL_DIR = None
 
-MODELS = ["ltx", "h3", "wan", "flux2", "qwen", "hidream"]
+MODELS = ["ltx", "h3", "h3t8", "h3t4", "wan", "flux2", "qwen", "hidream"]
 MODEL_LABEL = {"ltx": "LTX-2.5", "wan": "Wan 2.2", "h3": "MiniMax H3",
+               "h3t8": "H3 Turbo-8", "h3t4": "H3 Turbo-4",
                "flux2": "FLUX.2 Dev", "qwen": "Qwen-Image", "hidream": "HiDream-I1"}
 # 依 diffusion_models / encoder 檔名判斷模型（順序：先判斷較獨特的）
 SIGNATURES = [

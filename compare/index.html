@@ -89,7 +89,10 @@
   .mchip .dot{width:9px;height:9px;border-radius:50%;background:var(--err);transition:all .3s}
   .mchip.ready .dot{background:var(--ok);box-shadow:0 0 0 3px rgba(61,154,110,.15)}
 
-  .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  .grid{display:flex;flex-direction:column;gap:24px}
+  .grid-run{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    padding-bottom:24px;border-bottom:1px dashed var(--line)}
+  .grid-run:last-child{border-bottom:none;padding-bottom:0}
 
   .col{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
        display:flex;flex-direction:column;box-shadow:var(--shadow-sm);
@@ -171,6 +174,7 @@
       <h1>模型比較</h1>
       <div class="sub">同一個 prompt · 影片：LTX-2.5 / H3 / Wan · 圖片：FLUX.2 / Qwen / HiDream · 本機 ComfyUI</div>
     </div>
+    <a href="http://localhost:8080" target="_blank" class="btn ghost" style="margin-right:4px;padding:8px 16px;font-size:13px;text-decoration:none">💬 AI Chat</a>
     <div class="qbox" id="qbox" title="ComfyUI 佇列狀態">
       <span class="qdot" id="qdot"></span>
       <span id="qtext">佇列 —</span>
@@ -225,8 +229,8 @@
       <div>
         <label>輸出形式</label>
         <div class="seg" id="typeSeg">
-          <button data-t="image">🖼️ 圖片</button>
-          <button data-t="video" class="on">🎞️ 影片</button>
+          <button data-t="image" class="on">🖼️ 圖片</button>
+          <button data-t="video">🎞️ 影片</button>
         </div>
       </div>
       <div style="flex:2">
@@ -269,6 +273,24 @@
           <tr><td>授權</td><td>MiniMax 開放</td></tr>
         </table>
         <div class="info-note">⚠️ 2K 以上解析度不建議 — Sol-Attn 在高 token 數下可能產生網格偽影，全量 attention 則 OOM。</div>
+      </div>
+      <div class="info-card">
+        <h4>H3 Turbo-8 <span class="badge video">影片</span></h4>
+        <table>
+          <tr><td>基底</td><td>MiniMax H3 + 蒸餾 LoRA</td></tr>
+          <tr><td>步數</td><td>8（原版 14）</td></tr>
+          <tr><td>來源</td><td>ModelTC（第三方）</td></tr>
+          <tr><td>品質</td><td>接近原版，細節略減</td></tr>
+        </table>
+      </div>
+      <div class="info-card">
+        <h4>H3 Turbo-4 <span class="badge video">影片</span></h4>
+        <table>
+          <tr><td>基底</td><td>MiniMax H3 + 蒸餾 LoRA</td></tr>
+          <tr><td>步數</td><td>4（原版 14）</td></tr>
+          <tr><td>來源</td><td>ModelTC（第三方）</td></tr>
+          <tr><td>品質</td><td>快速草稿，臉部/手部細節有損失</td></tr>
+        </table>
       </div>
       <div class="info-card">
         <h4>Wan 2.2 <span class="badge video">影片</span></h4>
@@ -370,13 +392,20 @@
     return of(u,o);
   };})();
 const $ = s => document.querySelector(s);
-let STATE = {}, ORDER = ["ltx","wan","h3","flux2","qwen","hidream"], LABELS = {}, otype = "video";
-const VIDEO_MODELS = ["ltx","h3","wan"];
+let STATE = {}, ORDER = ["ltx","wan","h3","h3t8","h3t4","flux2","qwen","hidream"], LABELS = {}, otype = "image";
+const VIDEO_MODELS = ["ltx","h3","h3t8","h3t4","wan"];
 const IMAGE_MODELS = ["flux2","qwen","hidream"];
-const selected = new Set(["ltx","h3"]);
+const selected = new Set(["flux2","qwen","hidream"]);
+
+const FALLBACK_LABELS = {"ltx":"LTX-2.5","wan":"Wan 2.2","h3":"MiniMax H3",
+  "h3t8":"H3 Turbo-8","h3t4":"H3 Turbo-4","flux2":"FLUX.2 Dev","qwen":"Qwen-Image","hidream":"HiDream-I1"};
+if(!Object.keys(LABELS).length) LABELS = {...FALLBACK_LABELS};
 
 async function loadState(){
-  const r = await fetch("/api/models"); const d = await r.json();
+  const r = await fetch("/api/models");
+  if(r.status===401){ try{ askToken(); }catch(e){} renderChips(); return; }
+  const d = await r.json();
+  if(!d.order){ renderChips(); return; }
   STATE = d.models; ORDER = d.order; LABELS = d.labels;
   if (d.comfy) $("#comfyLink").href = d.comfy;
   renderSetup(); renderChips();
@@ -646,8 +675,9 @@ $("#go").onclick=async()=>{
   const seed=parseInt($("#seed").value||"0",10);
   newSeed();
   $("#go").disabled=true; $("#hint").textContent="送出中…";
-  // 先擺好欄位
-  const grid=$("#grid"); grid.innerHTML="";
+  // 先擺好欄位（插在最前面，保留歷史輸出）
+  const grid=$("#grid");
+  const run=document.createElement("div"); run.className="grid-run";
   const cols={};
   const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   models.forEach(m=>{
@@ -655,8 +685,9 @@ $("#go").onclick=async()=>{
     c.innerHTML=`<h3>${LABELS[m]}<span class="meta" style="font-size:11px">seed ${seed}</span></h3>
       <div class="usedPrompt" title="${esc(prompt)}">📝 ${esc(prompt)}</div>
       <div class="body"><div class="spin"></div><div class="status">排隊中…</div></div>`;
-    grid.appendChild(c); cols[m]=c;
+    run.appendChild(c); cols[m]=c;
   });
+  grid.insertBefore(run, grid.firstChild);
   const r=await fetch("/api/generate",{method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({prompt,seed,type:otype,models,resolution:$("#resSel").value})});

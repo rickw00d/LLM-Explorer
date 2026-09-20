@@ -5,7 +5,8 @@
 # Why user services and not a hand-written unit: systemd splits ExecStart on whitespace,
 # so a repository path containing spaces silently becomes the wrong command (status
 # 203/EXEC, restarting forever). This script writes the paths already quoted.
-set -euo pipefail
+set -Eeuo pipefail
+trap 'echo "!! install.sh failed at line $LINENO (exit $?). Nothing further was changed." >&2' ERR
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
 UNIT_DIR="$HOME/.config/systemd/user"
@@ -29,10 +30,12 @@ sleep 1
 listeners_on() {
   local port="$1"
   if command -v ss >/dev/null 2>&1; then
+    # No listener means grep exits 1, which under set -e + pipefail would kill the
+    # script silently — exactly the case this check exists to pass.
     ss -ltnp 2>/dev/null | awk -v p=":$port\$" '$4 ~ p {print}' \
-      | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u
+      | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u || true
   elif command -v lsof >/dev/null 2>&1; then
-    lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u
+    lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u || true
   else
     echo "!! Neither ss nor lsof found; skipping the port check." >&2
   fi

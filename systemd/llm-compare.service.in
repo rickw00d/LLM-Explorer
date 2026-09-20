@@ -5,6 +5,11 @@ Documentation=https://github.com/rickw00d/LLM-Explorer
 # and serves the page while ComfyUI is still loading.
 After=network-online.target comfyui.service
 Wants=network-online.target comfyui.service
+# Give up after five failures in five minutes instead of retrying forever.
+# A unit that restarts every 10s never trips systemd's default 10s rate limit,
+# which is how the old hand-written unit reached 1853 failed starts unnoticed.
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 Type=simple

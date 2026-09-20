@@ -18,6 +18,46 @@ done
 
 q() { printf '"%s"' "$1"; }   # systemd accepts double quotes around an Exec argument
 
+# Anything already listening on these ports will make the new units crash-loop, and a
+# process whose PID file has been deleted can no longer be stopped by stop.sh. Clear
+# what we can, then refuse to continue rather than installing a service that cannot bind.
+"$COMPARE_DIR/stop.sh" >/dev/null 2>&1 || true
+systemctl --user stop comfyui.service llm-compare.service 2>/dev/null || true
+sleep 1
+
+# Print the PIDs listening on a TCP port. ss is the usual tool; lsof is the fallback.
+listeners_on() {
+  local port="$1"
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltnp 2>/dev/null | awk -v p=":$port\$" '$4 ~ p {print}' \
+      | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u
+  elif command -v lsof >/dev/null 2>&1; then
+    lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u
+  else
+    echo "!! Neither ss nor lsof found; skipping the port check." >&2
+  fi
+}
+
+stale=""
+for port in 8188 8890; do
+  holders="$(listeners_on "$port")"
+  [[ -n "$holders" ]] || continue
+  echo "!! Port $port is still in use:" >&2
+  for pid in $holders; do
+    printf '   pid %s  %s\n' "$pid" "$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null)" >&2
+    stale="$stale $pid"
+  done
+done
+if [[ -n "$stale" ]]; then
+  echo >&2
+  echo "These are leftover processes from an earlier start. If their PID file was" >&2
+  echo "deleted, stop.sh can no longer reach them. Stop them, then run this again:" >&2
+  echo >&2
+  echo "  kill$stale" >&2
+  echo >&2
+  exit 1
+fi
+
 mkdir -p "$UNIT_DIR"
 for name in comfyui llm-compare; do
   sed -e "s|@COMFYUI_DIR@|$COMFYUI_DIR|g" \

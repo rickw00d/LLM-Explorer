@@ -4,6 +4,17 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PIDF="$SCRIPT_DIR/comfyui.pid"
 
+# Mirror start.sh: when systemd owns ComfyUI, killing the PID directly just triggers
+# Restart=on-failure. Ask systemd to stop it so it stays stopped.
+if systemctl --user cat comfyui.service >/dev/null 2>&1 \
+   && [[ "$(systemctl --user is-active comfyui.service)" == "active" ]]; then
+  echo ">> Stopping comfyui.service through systemd…"
+  systemctl --user stop comfyui.service
+  rm -f "$PIDF"
+  echo ">> Done."
+  exit 0
+fi
+
 if [[ ! -f "$PIDF" ]]; then
   echo ">> No PID file; ComfyUI is probably not running."
   exit 0

@@ -80,7 +80,7 @@ cd chatbot
 ```bash
 cd comfyui
 ./setup.sh             # 建 venv + 装 cu130 PyTorch + 最新 ComfyUI + Manager
-./download-models.sh   # 下载全部；也可指定 ltx|wan|h3|flux2|qwen|zimage|video|image
+./download-models.sh   # 下载全部；也可指定 ltx|wan|h3|flux2|qwen21|zimage|video|image
 ./start.sh             # 后台启动 → http://localhost:8188
 ./stop.sh              # 停止
 ```

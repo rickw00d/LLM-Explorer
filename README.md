@@ -82,7 +82,7 @@ To add or remove models, edit [`chatbot/models.txt`](chatbot/models.txt) and re-
 ```bash
 cd comfyui
 ./setup.sh             # venv + cu130 PyTorch + latest ComfyUI + Manager
-./download-models.sh   # all models; or pass one of: ltx wan h3 flux2 qwen zimage video image
+./download-models.sh   # all models; or pass one of: ltx wan h3 flux2 qwen21 zimage video image
 ./start.sh             # start in the background → http://localhost:8188
 ./stop.sh              # stop
 ```

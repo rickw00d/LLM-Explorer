@@ -76,7 +76,7 @@ items=(
   "System bootstrap (packages, Docker, CUDA checks)"
   "ComfyUI environment (venv + PyTorch cu130)"
   "Video models (LTX-2.5 / MiniMax H3 / Wan 2.2)"
-  "Image models (Flux.2 Klein / Qwen-Image / Z-Image Turbo)"
+  "Image models (Flux.2 Klein / Qwen-Image 2.1 / Z-Image Turbo)"
   "Start ComfyUI + the comparison tool"
   "Chatbot (Open WebUI + Ollama + LLMs)"
 )
@@ -312,13 +312,13 @@ fi
 if [[ "$DO_IMAGE" == "1" ]]; then
   step "Download image models"
 
-  img_items=("Flux.2 Klein (9B fp8)" "Qwen-Image-2512 (bf16)" "Z-Image Turbo (6B bf16)")
+  img_items=("Flux.2 Klein (9B fp8)" "Qwen-Image 2.1 (7B int8)" "Z-Image Turbo (6B bf16)")
   img_sel=(1 1 1)
   for _ in "${!img_items[@]}"; do echo; done; echo; echo; echo
   toggle_menu "Select image models to download:" img_items img_sel
 
   [[ "${img_sel[0]}" == "1" ]] && { info "Downloading Flux.2 Klein..."; cd comfyui; bash download-models.sh flux2 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
-  [[ "${img_sel[1]}" == "1" ]] && { info "Downloading Qwen-Image-2512..."; cd comfyui; bash download-models.sh qwen 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
+  [[ "${img_sel[1]}" == "1" ]] && { info "Downloading Qwen-Image 2.1..."; cd comfyui; bash download-models.sh qwen21 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   [[ "${img_sel[2]}" == "1" ]] && { info "Downloading Z-Image Turbo..."; cd comfyui; bash download-models.sh zimage 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   ok "Image model downloads finished"
 fi

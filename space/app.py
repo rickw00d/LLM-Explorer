@@ -27,7 +27,7 @@ REQ_TIMEOUT = 30
 
 MODELS = {
     "video": [("ltx", "LTX-2.5"), ("h3", "MiniMax H3"), ("wan", "Wan 2.2")],
-    "image": [("flux2", "FLUX.2 Dev"), ("qwen", "Qwen-Image"), ("hidream", "HiDream-I1")],
+    "image": [("qwen21", "Qwen-Image 2.1"), ("flux2", "FLUX.2 Dev"), ("hidream", "HiDream-I1")],
 }
 LABEL = {k: v for lst in MODELS.values() for k, v in lst}
 MAX_MODELS = 3  # must match COMPARE_MAX_MODELS in server.py server.py
@@ -49,7 +49,7 @@ DEFAULT_RES = {"video": "1376x768", "image": "1024x1024"}
 # about half — the rest is moving 16-22 GB of weights into VRAM. Back-to-back runs of the
 # same model are faster than this.
 BASE_SECS = {"ltx": 144, "h3": 298, "wan": 200,
-             "flux2": 85, "qwen": 70, "hidream": 60}
+             "flux2": 85, "qwen21": 26, "hidream": 60}
 BASE_MP = {"video": 1376 * 768 / 1e6, "image": 1024 * 1024 / 1e6}
 # Attention grows super-linearly with token count: H3 measured 2.59x slower from HD to FHD
 # (1.96x pixels) → an exponent of roughly 1.4

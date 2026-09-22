@@ -5,9 +5,9 @@
 #
 #   ./download-models.sh          # everything (video + image)
 #   ./download-models.sh video    # video models (ltx + wan + h3)
-#   ./download-models.sh image    # image models (flux2 + qwen + zimage)
+#   ./download-models.sh image    # image models (flux2 + qwen21 + zimage)
 #   ./download-models.sh flux2    # Flux.2 Klein only
-#   ./download-models.sh qwen     # Qwen-Image-2512 only
+#   ./download-models.sh qwen21   # Qwen-Image 2.1 only
 #   ./download-models.sh zimage   # Z-Image Turbo only
 #
 # Requires the HuggingFace CLI, logged in (LTX-2.5 is a gated repo — accept its licence):
@@ -85,11 +85,11 @@ get_flux2(){
   dl "Comfy-Org/vae-text-encorder-for-flux-klein-9b" "qwen_3_8b.safetensors"   "text_encoders"
 }
 
-get_qwen_image(){
-  echo "=== Qwen-Image-2512 (Alibaba, text-to-image) ==="
-  dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_image_2512_bf16.safetensors"        "diffusion_models"
-  dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_2.5_vl_7b_fp8_scaled.safetensors"  "text_encoders"
-  dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_image_vae.safetensors"             "vae"
+get_qwen_image_21(){
+  echo "=== Qwen-Image 2.1 (Alibaba, 7B DiT text-to-image; needs ComfyUI >= the TextEncodeQwenImage21 node) ==="
+  dl "Comfy-Org/Qwen-Image-2.1" "qwen_image_2.1_int8_convrot.safetensors"  "diffusion_models"
+  dl "Comfy-Org/Qwen-Image-2.1" "qwen3vl_8b_int8_convrot.safetensors"      "text_encoders"
+  dl "Comfy-Org/Qwen-Image-2.1" "qwen_image_2.1_vae_bf16.safetensors"      "vae"
 }
 
 get_zimage(){
@@ -105,12 +105,12 @@ case "${1:-all}" in
   wan)    get_wan ;;
   h3)     get_h3 ;;
   flux2)  get_flux2 ;;
-  qwen)   get_qwen_image ;;
+  qwen21) get_qwen_image_21 ;;
   zimage) get_zimage ;;
   video)  get_ltx; get_wan; get_h3 ;;
-  image)  get_flux2; get_qwen_image; get_zimage ;;
-  all)    get_ltx; get_wan; get_h3; get_flux2; get_qwen_image; get_zimage ;;
-  *)      echo "Usage: $0 [ltx|wan|h3|flux2|qwen|zimage|video|image|all]"; exit 1 ;;
+  image)  get_flux2; get_qwen_image_21; get_zimage ;;
+  all)    get_ltx; get_wan; get_h3; get_flux2; get_qwen_image_21; get_zimage ;;
+  *)      echo "Usage: $0 [ltx|wan|h3|flux2|qwen21|zimage|video|image|all]"; exit 1 ;;
 esac
 
 echo

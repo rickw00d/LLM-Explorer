@@ -46,7 +46,7 @@ const I18N = {
     "bench.video5s": "video 5s",
     "bench.image": "image",
     "bench.flux": "~57s (NVFP4, 10 steps)",
-    "bench.qwen": "~40s (FP8, 30 steps, CFG=1)",
+    "bench.qwen": "~26s (int8, 25 steps, CFG=1)",
     "bench.hidream": "~35s (FP8, 20 steps, LCM)",
     "bench.note": "* Measured on NVIDIA GB10 (DGX Spark), 128 GB unified memory. Image timings are estimates.",
 
@@ -119,7 +119,7 @@ const I18N = {
     "bench.video5s": "影片 5 秒",
     "bench.image": "圖片",
     "bench.flux": "約 57s（NVFP4，10 步）",
-    "bench.qwen": "約 40s（FP8，30 步，CFG=1）",
+    "bench.qwen": "約 26s（int8，25 步，CFG=1）",
     "bench.hidream": "約 35s（FP8，20 步，LCM）",
     "bench.note": "* 測試於 NVIDIA GB10 (DGX Spark)，128GB 統一記憶體。圖片速度為預估值。",
 
@@ -192,7 +192,7 @@ const I18N = {
     "bench.video5s": "视频 5 秒",
     "bench.image": "图像",
     "bench.flux": "约 57s（NVFP4，10 步）",
-    "bench.qwen": "约 40s（FP8，30 步，CFG=1）",
+    "bench.qwen": "约 26s（int8，25 步，CFG=1）",
     "bench.hidream": "约 35s（FP8，20 步，LCM）",
     "bench.note": "* 测试于 NVIDIA GB10 (DGX Spark)，128GB 统一内存。图像速度为预估值。",
 

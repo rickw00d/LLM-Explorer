@@ -59,7 +59,8 @@ sudo apt-get update && sudo apt-get install -y python3-dev build-essential
 
 # 下載模型用的 HuggingFace CLI（ComfyUI 部分需要）
 pip install -U "huggingface_hub[cli]"
-hf auth login          # LTX-2.5 為 gated，需先到其 HF 頁面接受授權
+hf auth login          # 接著要接受 LTX-2.5 的授權，否則下載會被拒絕：
+                       # https://huggingface.co/Lightricks/LTX-2.5
 ```
 
 ## 1. Chatbot（多 LLM）

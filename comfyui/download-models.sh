@@ -34,15 +34,57 @@ else echo "!! hf CLI not found — run ./setup.sh first, or pip install -U 'hugg
 # Recent huggingface_hub uses Xet transfer; enable high-performance mode (replaces the deprecated hf_transfer)
 export HF_XET_HIGH_PERFORMANCE=1
 
+# Who we are on HuggingFace. Gated repos (LTX-2.5) need both a login and an accepted
+# licence, and the two failures need different fixes, so record which one applies.
+HF_USER=""
+if HF_USER="$("$HF" auth whoami 2>/dev/null | head -n1)" && [[ -n "$HF_USER" ]]; then
+  echo ">> HuggingFace: logged in as $HF_USER"
+else
+  HF_USER=""
+  echo "!! HuggingFace: not logged in — gated repos will be refused."
+  echo "   Log in first:  $HF auth login"
+fi
+
+# Repos that answered "access denied". Once a repo is in here its remaining files are
+# skipped: without access every one of them fails identically, and four copies of the
+# same error buries the one line that says what to do about it.
+DENIED=""
+denied(){ [[ " $DENIED " == *" $1 "* ]]; }
+deny(){
+  DENIED="$DENIED $1"
+  echo
+  echo "  ── no access to $1 ──"
+  if [[ -z "$HF_USER" ]]; then
+    echo "     This repo is gated and you are not logged in. Run:"
+    echo "       $HF auth login"
+    echo "     then accept the licence at https://huggingface.co/$1"
+  else
+    echo "     You are logged in as $HF_USER, so the licence has not been accepted yet."
+    echo "     Open the page, click through the licence, then re-run this script:"
+    echo "       https://huggingface.co/$1"
+  fi
+  echo "     Skipping the remaining files from this repo."
+  echo
+}
+
 # dl <repo> <filename> <models subfolder>: matches by filename glob, so the exact path inside the repo does not matter
 dl(){
   local repo="$1" fname="$2" sub="$3"
   local dest="$COMFY/models/$sub"
   mkdir -p "$dest"
   if [[ -f "$dest/$fname" ]]; then echo "  ✓ already present, skipping: $sub/$fname"; return 0; fi
+  if denied "$repo"; then echo "  – skipped, no access to $repo: $fname"; return 1; fi
   echo ">> downloading: $fname  ←  $repo"
-  if ! "$HF" download "$repo" --include "**/$fname" --include "$fname" --local-dir "$STAGE/$repo" >/dev/null; then
-    echo "  !! download failed: $repo / $fname (check hf auth login / licence accepted)"; return 1
+  local err
+  # 2>&1 >/dev/null keeps stderr for inspection and drops the progress bars.
+  if ! err="$("$HF" download "$repo" --include "**/$fname" --include "$fname" --local-dir "$STAGE/$repo" 2>&1 >/dev/null)"; then
+    if grep -qiE 'access denied|requires approval|gated|awaiting a review|401 client error|403 client error' <<<"$err"; then
+      deny "$repo"
+    else
+      echo "  !! download failed: $repo / $fname"
+      echo "$err" | tail -n 3 | sed 's/^/     /'
+    fi
+    return 1
   fi
   local found; found="$(find "$STAGE/$repo" -type f -name "$fname" | head -n1)"
   if [[ -n "$found" ]]; then mv -f "$found" "$dest/$fname"; echo "  → $dest/$fname"; else

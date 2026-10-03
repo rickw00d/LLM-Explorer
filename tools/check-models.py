@@ -74,7 +74,9 @@ for t in sorted(set(dispatch) - {"video", "image", "all"}):
                         f"— remove it, or add the card")
 
 # weights a card loads that the downloader cannot fetch
-# The h3 card was captured with the Turbo-8 LoRA applied, so it needs h3turbo too.
+# The h3 graph carries the Turbo-8 LoRA behind an "Enable Lightning LoRA" switch that
+# is off, so h3 renders at 14 steps without it. The weight still has to be downloadable:
+# the switch is a toggle in the UI, and flipping it must not leave a missing file.
 SERVED_BY = {"h3": ["h3", "h3turbo"],
              "h3t8": ["h3turbo", "h3"], "h3t4": ["h3turbo", "h3"]}
 for c in sorted(wf_cards & set(cards)):

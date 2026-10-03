@@ -13,6 +13,7 @@ generative models side by side from a single prompt — all on one machine.
 [![OS](https://img.shields.io/badge/Ubuntu-24.04-E95420)](#)
 [![Docs](https://img.shields.io/badge/docs-en%20·%20zh--TW%20·%20zh--CN-informational)](#languages)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-yellow)](LICENSE)
 
 **English** · [繁體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
 
@@ -289,5 +290,5 @@ python3 tools/check-models.py   # cards, workflows and download targets agree
 
 ## Licence
 
-Not yet chosen. Until a `LICENSE` file is added, default copyright applies and no
-permission is granted to reuse this code. If you want to use it, please open an issue.
+[MIT](LICENSE). The weights this toolkit downloads carry their own licences — LTX-2.5
+and the FLUX.2 repositories are gated and you must accept theirs separately.

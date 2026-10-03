@@ -13,6 +13,7 @@
 [![OS](https://img.shields.io/badge/Ubuntu-24.04-E95420)](#)
 [![Docs](https://img.shields.io/badge/docs-en%20·%20zh--TW%20·%20zh--CN-informational)](#語言)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.zh-TW.md)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-yellow)](LICENSE)
 
 [English](README.md) · **繁體中文** · [简体中文](README.zh-CN.md)
 
@@ -275,5 +276,5 @@ python3 tools/check-models.py   # 卡片、workflow、下載目標是否一致
 
 ## 授權
 
-**尚未選定。** 在加入 `LICENSE` 檔案之前，適用預設著作權，未授予任何重用本程式碼的權利。
-若你想使用，請開一個 issue 詢問。
+[MIT](LICENSE)。本工具組下載的模型權重各有自己的授權——LTX-2.5 與 FLUX.2 系列是 gated repo，
+必須另外接受它們的條款。

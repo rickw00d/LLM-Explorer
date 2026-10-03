@@ -60,7 +60,7 @@ sudo usermod -aG docker $USER
 sudo apt-get update && sudo apt-get install -y python3-dev build-essential
 
 # HuggingFace CLI for model downloads (needed by the ComfyUI part)
-pip install -U "huggingface_hub[cli]"
+pip install -U huggingface_hub
 hf auth login          # then accept the LTX-2.5 licence, or its downloads are refused:
                        # https://huggingface.co/Lightricks/LTX-2.5
 ```
@@ -98,6 +98,12 @@ Models covered:
 | Flux.2 Klein (9B fp8) | image | |
 | Qwen-Image-2512 (bf16) | image | |
 | Z-Image Turbo (6B bf16) | image | distilled, fast |
+
+> `download-models.sh` and the comparison tool do not cover exactly the same set.
+> Z-Image Turbo downloads but has no card in the comparison tool; HiDream-I1 and the
+> H3 Turbo-4/8 variants have cards but no downloader. For those, open the model's
+> official template in ComfyUI once — it fetches whatever is missing — then press
+> **🎯 Capture from ComfyUI** on the card.
 
 Fair-comparison method (same prompt / same seed): see
 [`comfyui/workflows/README.md`](comfyui/workflows/README.md).

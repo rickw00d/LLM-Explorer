@@ -11,11 +11,15 @@
 #   ./download-models.sh zimage   # Z-Image Turbo only
 #
 # Requires the HuggingFace CLI, logged in (LTX-2.5 is a gated repo — accept its licence):
-#   pip install -U "huggingface_hub[cli]"
+#   pip install -U huggingface_hub
 #   hf auth login
 #
 # If a filename or path changes upstream, the safest fallback is opening the official
 # template in ComfyUI — it fetches whatever is missing (see workflows/README.md).
+#
+# Not everything the comparison tool can show is downloadable here: HiDream-I1 and the
+# H3 Turbo-4/8 variants have cards but no entry below, and zimage downloads but has no
+# card. Use the ComfyUI template route for those.
 #
 # Note: -e is deliberately omitted so one failed download (e.g. LTX without a login)
 # does not abort the remaining models.
@@ -29,7 +33,7 @@ mkdir -p "$STAGE"
 # Prefer the hf CLI inside the ComfyUI venv (installed by setup.sh) to avoid system pip limits
 if [[ -x "$VENV/bin/hf" ]]; then HF="$VENV/bin/hf"; PY="$VENV/bin/python"
 elif command -v hf >/dev/null 2>&1; then HF="hf"; PY="python3"
-else echo "!! hf CLI not found — run ./setup.sh first, or pip install -U 'huggingface_hub[cli]'"; exit 1; fi
+else echo "!! hf CLI not found — run ./setup.sh first, or pip install -U huggingface_hub"; exit 1; fi
 
 # Recent huggingface_hub uses Xet transfer; enable high-performance mode (replaces the deprecated hf_transfer)
 export HF_XET_HIGH_PERFORMANCE=1

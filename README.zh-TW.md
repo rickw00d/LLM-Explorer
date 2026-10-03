@@ -58,7 +58,7 @@ sudo usermod -aG docker $USER
 sudo apt-get update && sudo apt-get install -y python3-dev build-essential
 
 # 下載模型用的 HuggingFace CLI（ComfyUI 部分需要）
-pip install -U "huggingface_hub[cli]"
+pip install -U huggingface_hub
 hf auth login          # 接著要接受 LTX-2.5 的授權，否則下載會被拒絕：
                        # https://huggingface.co/Lightricks/LTX-2.5
 ```
@@ -96,6 +96,11 @@ cd comfyui
 | Flux.2 Klein（9B fp8） | 圖片 | |
 | Qwen-Image-2512（bf16） | 圖片 | |
 | Z-Image Turbo（6B bf16） | 圖片 | 蒸餾版，較快 |
+
+> `download-models.sh` 和比較工具涵蓋的模型並不完全一致。Z-Image Turbo 下載得到，
+> 但比較工具沒有它的卡片；HiDream-I1 和 H3 Turbo-4/8 有卡片，卻沒有對應的下載器。
+> 這幾個請先在 ComfyUI 裡開一次官方範本（缺的檔案它會自己抓），再回到卡片上按
+> **🎯 Capture from ComfyUI**。
 
 公平比對方法（同 prompt／同 seed）見
 [`comfyui/workflows/README.zh-TW.md`](comfyui/workflows/README.zh-TW.md)。

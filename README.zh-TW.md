@@ -36,7 +36,7 @@ cd LLM-Explorer
 1. 系統初始化 — 套件、Docker、CUDA 檢查
 2. ComfyUI 環境 — venv + PyTorch cu130
 3. 影片模型 — LTX-2.5 / MiniMax H3 / Wan 2.2
-4. 圖片模型 — Flux.2 Klein / Qwen-Image / Z-Image Turbo
+4. 圖片模型 — FLUX.2 / Qwen-Image / HiDream-I1
 5. 啟動 ComfyUI + 比較工具
 6. Chatbot — Open WebUI + Ollama + LLM
 
@@ -81,7 +81,7 @@ cd chatbot
 ```bash
 cd comfyui
 ./setup.sh             # 建 venv + 裝 cu130 PyTorch + 最新 ComfyUI + Manager
-./download-models.sh   # 下載全部；也可指定 ltx|wan|h3|flux2|qwen|zimage|video|image
+./download-models.sh   # 下載全部；也可指定 ltx|wan|h3|h3turbo|flux2|qwen|hidream|video|image
 ./start.sh             # 背景啟動 → http://localhost:8188
 ./stop.sh              # 停止
 ```
@@ -95,14 +95,13 @@ cd comfyui
 | Wan 2.2 T2V 14B（fp8） | 影片 | 單張輸出即等同文生圖 |
 | Flux.2 Klein（9B fp8） | 圖片 | |
 | Qwen-Image-2512（bf16） | 圖片 | |
-| Z-Image Turbo（6B bf16） | 圖片 | 蒸餾版，較快 |
-| HiDream-I1 dev（fp8） | 圖片 | `./download-models.sh hidream`，不含在 `all` 內 |
-| H3 Turbo-8 / Turbo-4（LoRA） | 影片 | `./download-models.sh h3turbo`，另需 `h3` |
+| HiDream-I1 dev（fp8） | 圖片 | 需要四個文字編碼器 |
+| H3 Turbo-8 / Turbo-4（LoRA） | 影片 | 蒸餾版，另需 `h3` 的檔案 |
 
-> HiDream 和 H3 Turbo LoRA 刻意不放進 `all`：兩者都很大，而且 HiDream 的 VAE 檔名是
-> `ae.safetensors`，跟 Z-Image Turbo 的檔名完全相同但內容不同。下載器會記錄每個檔案
-> 來自哪個 repo，兩者撞名時直接告訴你，而不是默默讓其中一個模型拿到錯的 VAE。
-> Z-Image Turbo 下載得到，但比較工具沒有它的卡片。
+> 下載目標對應比較工具上有的卡片。Z-Image Turbo 已從該介面移除，因此不再下載。
+> 不同 repo 偶爾會用同一個檔名放不同檔案（最常見的是 `ae.safetensors`），所以下載器
+> 會記錄每個檔案來自哪個 repo，換另一個 repo 要用同名檔案時直接告訴你，
+> 而不是讓某個模型默默套到錯的 VAE。
 
 公平比對方法（同 prompt／同 seed）見
 [`comfyui/workflows/README.zh-TW.md`](comfyui/workflows/README.zh-TW.md)。
@@ -215,6 +214,7 @@ LLM-Explorer/
 ├── compare/                    # 比較工具
 │   ├── server.py  index.html  i18n.js  start.sh  run.sh  stop.sh  tunnel.sh
 │   └── workflows/              # 擷取到的各模型 workflow
+├── tools/                      # check-i18n.py（翻譯）· check-models.py（模型清單）
 ├── systemd/                    # 開機自動啟動用的 user service（install.sh）
 ├── space/                      # HuggingFace Space 前端
 └── docs/                       # 說明文件 + GitHub Pages（index.html、i18n.js）

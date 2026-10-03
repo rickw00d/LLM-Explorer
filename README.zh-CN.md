@@ -36,7 +36,7 @@ cd LLM-Explorer
 1. 系统初始化 — 软件包、Docker、CUDA 检查
 2. ComfyUI 环境 — venv + PyTorch cu130
 3. 视频模型 — LTX-2.5 / MiniMax H3 / Wan 2.2
-4. 图像模型 — Flux.2 Klein / Qwen-Image / Z-Image Turbo
+4. 图像模型 — FLUX.2 / Qwen-Image / HiDream-I1
 5. 启动 ComfyUI + 对比工具
 6. Chatbot — Open WebUI + Ollama + LLM
 
@@ -81,7 +81,7 @@ cd chatbot
 ```bash
 cd comfyui
 ./setup.sh             # 建 venv + 装 cu130 PyTorch + 最新 ComfyUI + Manager
-./download-models.sh   # 下载全部；也可指定 ltx|wan|h3|flux2|qwen|zimage|video|image
+./download-models.sh   # 下载全部；也可指定 ltx|wan|h3|h3turbo|flux2|qwen|hidream|video|image
 ./start.sh             # 后台启动 → http://localhost:8188
 ./stop.sh              # 停止
 ```
@@ -95,14 +95,13 @@ cd comfyui
 | Wan 2.2 T2V 14B（fp8） | 视频 | 单张输出即等同文生图 |
 | Flux.2 Klein（9B fp8） | 图像 | |
 | Qwen-Image-2512（bf16） | 图像 | |
-| Z-Image Turbo（6B bf16） | 图像 | 蒸馏版，较快 |
-| HiDream-I1 dev（fp8） | 图像 | `./download-models.sh hidream`，不含在 `all` 内 |
-| H3 Turbo-8 / Turbo-4（LoRA） | 视频 | `./download-models.sh h3turbo`，另需 `h3` |
+| HiDream-I1 dev（fp8） | 图像 | 需要四个文本编码器 |
+| H3 Turbo-8 / Turbo-4（LoRA） | 视频 | 蒸馏版，另需 `h3` 的文件 |
 
-> HiDream 和 H3 Turbo LoRA 刻意不放进 `all`：两者都很大，而且 HiDream 的 VAE 文件名是
-> `ae.safetensors`，跟 Z-Image Turbo 的文件名完全相同但内容不同。下载器会记录每个文件
-> 来自哪个 repo，两者撞名时直接告诉你，而不是默默让其中一个模型拿到错的 VAE。
-> Z-Image Turbo 能下载，但对比工具没有它的卡片。
+> 下载目标对应对比工具上有的卡片。Z-Image Turbo 已从该界面移除，因此不再下载。
+> 不同 repo 偶尔会用同一个文件名放不同文件（最常见的是 `ae.safetensors`），所以下载器
+> 会记录每个文件来自哪个 repo，换另一个 repo 要用同名文件时直接告诉你，
+> 而不是让某个模型默默套到错的 VAE。
 
 公平对比方法（同 prompt／同 seed）见
 [`comfyui/workflows/README.zh-CN.md`](comfyui/workflows/README.zh-CN.md)。
@@ -215,6 +214,7 @@ LLM-Explorer/
 ├── compare/                    # 对比工具
 │   ├── server.py  index.html  i18n.js  start.sh  run.sh  stop.sh  tunnel.sh
 │   └── workflows/              # 抓取到的各模型 workflow
+├── tools/                      # check-i18n.py（翻译）· check-models.py（模型清单）
 ├── systemd/                    # 开机自动启动用的 user service（install.sh）
 ├── space/                      # HuggingFace Space 前端
 └── docs/                       # 说明文档 + GitHub Pages（index.html、i18n.js）

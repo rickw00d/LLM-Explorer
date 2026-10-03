@@ -39,7 +39,7 @@ Menu items:
 1. System bootstrap — packages, Docker, CUDA checks
 2. ComfyUI environment — venv + PyTorch cu130
 3. Video models — LTX-2.5 / MiniMax H3 / Wan 2.2
-4. Image models — Flux.2 Klein / Qwen-Image / Z-Image Turbo
+4. Image models — FLUX.2 / Qwen-Image / HiDream-I1
 5. Start ComfyUI + comparison tool
 6. Chatbot — Open WebUI + Ollama + LLMs
 
@@ -83,7 +83,7 @@ To add or remove models, edit [`chatbot/models.txt`](chatbot/models.txt) and re-
 ```bash
 cd comfyui
 ./setup.sh             # venv + cu130 PyTorch + latest ComfyUI + Manager
-./download-models.sh   # all models; or pass one of: ltx wan h3 flux2 qwen zimage video image
+./download-models.sh   # all models; or one of: ltx wan h3 h3turbo flux2 qwen hidream video image
 ./start.sh             # start in the background → http://localhost:8188
 ./stop.sh              # stop
 ```
@@ -97,15 +97,14 @@ Models covered:
 | Wan 2.2 T2V 14B (fp8) | video | a single-frame output is effectively text-to-image |
 | Flux.2 Klein (9B fp8) | image | |
 | Qwen-Image-2512 (bf16) | image | |
-| Z-Image Turbo (6B bf16) | image | distilled, fast |
-| HiDream-I1 dev (fp8) | image | `./download-models.sh hidream` — not in `all` |
-| H3 Turbo-8 / Turbo-4 (LoRAs) | video | `./download-models.sh h3turbo` — needs `h3` too |
+| HiDream-I1 dev (fp8) | image | four text encoders |
+| H3 Turbo-8 / Turbo-4 (LoRAs) | video | distilled; also needs the `h3` files |
 
-> HiDream and the H3 Turbo LoRAs are deliberately outside `all`: both are large, and
-> HiDream's VAE is called `ae.safetensors`, exactly like Z-Image Turbo's — a different
-> file under the same name. The downloader records where each file came from and tells
-> you when the two collide, rather than quietly leaving one model with the wrong VAE.
-> Z-Image Turbo downloads but has no card in the comparison tool.
+> The download targets mirror the cards the comparison tool shows. Z-Image Turbo was
+> removed from that UI, so it is no longer downloaded. Different repos sometimes ship
+> different files under one name — `ae.safetensors` is the usual culprit — so the
+> downloader records where each file came from and says so when a second repo wants
+> that name, instead of leaving a model on the wrong VAE.
 
 Fair-comparison method (same prompt / same seed): see
 [`comfyui/workflows/README.md`](comfyui/workflows/README.md).
@@ -226,7 +225,7 @@ LLM-Explorer/
 ├── comfyui/                    # ComfyUI (native venv)
 │   ├── setup.sh  start.sh  run.sh  stop.sh  download-models.sh
 │   └── workflows/              # comparison workflow notes + your exported .json
-├── tools/check-i18n.py         # translation-table consistency check
+├── tools/                      # check-i18n.py (translations) · check-models.py (model lists)
 ├── compare/                    # comparison tool
 │   ├── server.py  index.html  i18n.js  start.sh  run.sh  stop.sh  tunnel.sh
 │   └── workflows/              # captured per-model workflows

@@ -4,11 +4,10 @@
 # The files are large — roughly 20-40 GB per model.
 #
 #   ./download-models.sh          # everything (video + image)
-#   ./download-models.sh video    # video models (ltx + wan + h3)
-#   ./download-models.sh image    # image models (flux2 + qwen + zimage)
+#   ./download-models.sh video    # video models (ltx + wan + h3 + h3turbo)
+#   ./download-models.sh image    # image models (flux2 + qwen + hidream)
 #   ./download-models.sh flux2    # Flux.2 Klein only
 #   ./download-models.sh qwen     # Qwen-Image-2512 only
-#   ./download-models.sh zimage   # Z-Image Turbo only
 #   ./download-models.sh hidream  # HiDream-I1 dev fp8 only
 #   ./download-models.sh h3turbo  # MiniMax H3 Turbo-8 / Turbo-4 LoRAs (needs h3 as well)
 #
@@ -19,9 +18,8 @@
 # If a filename or path changes upstream, the safest fallback is opening the official
 # template in ComfyUI — it fetches whatever is missing (see workflows/README.md).
 #
-# hidream and h3turbo are deliberately left out of "all": both are large, and HiDream's
-# VAE is named ae.safetensors, the same as Z-Image Turbo's different file. Ask for them
-# by name. Z-Image downloads but has no card in the comparison tool.
+# The targets here mirror the cards the comparison tool shows. Z-Image Turbo used to be
+# downloaded but was removed from that UI, so it is no longer fetched.
 #
 # Note: -e is deliberately omitted so one failed download (e.g. LTX without a login)
 # does not abort the remaining models.
@@ -79,9 +77,9 @@ dl(){
   local dest="$COMFY/models/$sub"
   mkdir -p "$dest"
   if [[ -f "$dest/$fname" ]]; then
-    # Different repos ship different files under the same name — HiDream and Z-Image
-    # both call their VAE ae.safetensors. Record where each file came from, so the
-    # second one is reported instead of silently skipped as "already present".
+    # Different repos ship different files under the same name (ae.safetensors is a
+    # common one). Record where each file came from, so a second repo wanting that name
+    # is reported instead of silently skipped as "already present".
     local src=""; [[ -f "$dest/.$fname.from" ]] && src="$(cat "$dest/.$fname.from")"
     if [[ -n "$src" && "$src" != "$repo" ]]; then
       echo "  !! $sub/$fname is already here, but it came from $src, not $repo."
@@ -155,14 +153,6 @@ get_qwen_image(){
   dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_image_vae.safetensors"             "vae"
 }
 
-get_zimage(){
-  echo "=== Z-Image Turbo (Alibaba Tongyi, 6B distilled text-to-image) ==="
-  dl "Comfy-Org/z_image_turbo" "z_image_turbo_bf16.safetensors"                    "diffusion_models"
-  dl "Comfy-Org/z_image_turbo" "qwen_3_4b.safetensors"                            "text_encoders"
-  dl "Comfy-Org/z_image_turbo" "ae.safetensors"                                    "vae"
-  dl "Comfy-Org/z_image_turbo" "z_image_turbo_distill_patch_lora_bf16.safetensors" "loras"
-}
-
 get_hidream(){
   echo "=== HiDream-I1 dev fp8 (Comfy-Org repack; four text encoders) ==="
   dl "Comfy-Org/HiDream-I1_ComfyUI" "hidream_i1_dev_fp8.safetensors"              "diffusion_models"
@@ -170,8 +160,6 @@ get_hidream(){
   dl "Comfy-Org/HiDream-I1_ComfyUI" "clip_g_hidream.safetensors"                  "text_encoders"
   dl "Comfy-Org/HiDream-I1_ComfyUI" "t5xxl_fp8_e4m3fn_scaled.safetensors"         "text_encoders"
   dl "Comfy-Org/HiDream-I1_ComfyUI" "llama_3.1_8b_instruct_fp8_scaled.safetensors" "text_encoders"
-  # Note: Z-Image Turbo ships a different file under this same name. Whichever is
-  # fetched first wins; the guard in dl() reports the clash rather than hiding it.
   dl "Comfy-Org/HiDream-I1_ComfyUI" "ae.safetensors"                              "vae"
 }
 
@@ -191,15 +179,11 @@ case "${1:-all}" in
   h3turbo)  get_h3turbo ;;
   flux2)    get_flux2 ;;
   qwen)     get_qwen_image ;;
-  zimage)   get_zimage ;;
   hidream)  get_hidream ;;
-  video)    get_ltx; get_wan; get_h3 ;;
-  image)    get_flux2; get_qwen_image; get_zimage ;;
-  all)      get_ltx; get_wan; get_h3; get_flux2; get_qwen_image; get_zimage ;;
-  *)        echo "Usage: $0 [ltx|wan|h3|h3turbo|flux2|qwen|zimage|hidream|video|image|all]"
-            echo "  h3turbo and hidream are not in 'all': each is large, and hidream's VAE"
-            echo "  shares a filename with Z-Image Turbo's. Ask for them by name."
-            exit 1 ;;
+  video)    get_ltx; get_wan; get_h3; get_h3turbo ;;
+  image)    get_flux2; get_qwen_image; get_hidream ;;
+  all)      get_ltx; get_wan; get_h3; get_h3turbo; get_flux2; get_qwen_image; get_hidream ;;
+  *)        echo "Usage: $0 [ltx|wan|h3|h3turbo|flux2|qwen|hidream|video|image|all]"; exit 1 ;;
 esac
 
 echo

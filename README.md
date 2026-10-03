@@ -98,12 +98,14 @@ Models covered:
 | Flux.2 Klein (9B fp8) | image | |
 | Qwen-Image-2512 (bf16) | image | |
 | Z-Image Turbo (6B bf16) | image | distilled, fast |
+| HiDream-I1 dev (fp8) | image | `./download-models.sh hidream` — not in `all` |
+| H3 Turbo-8 / Turbo-4 (LoRAs) | video | `./download-models.sh h3turbo` — needs `h3` too |
 
-> `download-models.sh` and the comparison tool do not cover exactly the same set.
-> Z-Image Turbo downloads but has no card in the comparison tool; HiDream-I1 and the
-> H3 Turbo-4/8 variants have cards but no downloader. For those, open the model's
-> official template in ComfyUI once — it fetches whatever is missing — then press
-> **🎯 Capture from ComfyUI** on the card.
+> HiDream and the H3 Turbo LoRAs are deliberately outside `all`: both are large, and
+> HiDream's VAE is called `ae.safetensors`, exactly like Z-Image Turbo's — a different
+> file under the same name. The downloader records where each file came from and tells
+> you when the two collide, rather than quietly leaving one model with the wrong VAE.
+> Z-Image Turbo downloads but has no card in the comparison tool.
 
 Fair-comparison method (same prompt / same seed): see
 [`comfyui/workflows/README.md`](comfyui/workflows/README.md).

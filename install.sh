@@ -72,8 +72,8 @@ toggle_menu() {
 items=(
   "System bootstrap (packages, Docker, CUDA checks)"
   "ComfyUI environment (venv + PyTorch cu130)"
-  "Video models (LTX-2.5 / MiniMax H3 / Wan 2.2)"
-  "Image models (Flux.2 Klein / Qwen-Image / Z-Image Turbo)"
+  "Video models (LTX-2.5 / MiniMax H3 / Wan 2.2 / H3 Turbo)"
+  "Image models (Flux.2 Klein / Qwen-Image / Z-Image / HiDream)"
   "Start ComfyUI + the comparison tool"
   "Chatbot (Open WebUI + Ollama + LLMs)"
   "Start at boot (systemd user services)"
@@ -301,14 +301,16 @@ fi
 if [[ "$DO_VIDEO" == "1" ]]; then
   step "Download video models"
 
-  vid_items=("LTX-2.5 (Lightricks, 22B int8)" "MiniMax H3 (Hailuo 3.0, int8)" "Wan 2.2 (14B fp8)")
-  vid_sel=(1 1 1)
+  vid_items=("LTX-2.5 (Lightricks, 22B int8)" "MiniMax H3 (Hailuo 3.0, int8)" "Wan 2.2 (14B fp8)" \
+             "H3 Turbo-8 / Turbo-4 LoRAs (needs MiniMax H3)")
+  vid_sel=(1 1 1 0)
   for _ in "${!vid_items[@]}"; do echo; done; echo; echo; echo
   toggle_menu "Select video models to download:" vid_items vid_sel
 
   [[ "${vid_sel[0]}" == "1" ]] && { info "Downloading LTX-2.5..."; cd comfyui; bash download-models.sh ltx 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   [[ "${vid_sel[1]}" == "1" ]] && { info "Downloading MiniMax H3..."; cd comfyui; bash download-models.sh h3 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   [[ "${vid_sel[2]}" == "1" ]] && { info "Downloading Wan 2.2..."; cd comfyui; bash download-models.sh wan 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
+  [[ "${vid_sel[3]}" == "1" ]] && { info "Downloading the H3 Turbo LoRAs..."; cd comfyui; bash download-models.sh h3turbo 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   ok "Video model downloads finished"
 fi
 
@@ -318,14 +320,18 @@ fi
 if [[ "$DO_IMAGE" == "1" ]]; then
   step "Download image models"
 
-  img_items=("Flux.2 Klein (9B fp8)" "Qwen-Image-2512 (bf16)" "Z-Image Turbo (6B bf16)")
-  img_sel=(1 1 1)
+  # HiDream is off by default: it is large, and its VAE is named ae.safetensors, the
+  # same as Z-Image Turbo's different file — picking both makes one of them lose.
+  img_items=("Flux.2 Klein (9B fp8)" "Qwen-Image-2512 (bf16)" "Z-Image Turbo (6B bf16)" \
+             "HiDream-I1 dev fp8 (clashes with Z-Image's ae.safetensors)")
+  img_sel=(1 1 1 0)
   for _ in "${!img_items[@]}"; do echo; done; echo; echo; echo
   toggle_menu "Select image models to download:" img_items img_sel
 
   [[ "${img_sel[0]}" == "1" ]] && { info "Downloading Flux.2 Klein..."; cd comfyui; bash download-models.sh flux2 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   [[ "${img_sel[1]}" == "1" ]] && { info "Downloading Qwen-Image-2512..."; cd comfyui; bash download-models.sh qwen 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   [[ "${img_sel[2]}" == "1" ]] && { info "Downloading Z-Image Turbo..."; cd comfyui; bash download-models.sh zimage 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
+  [[ "${img_sel[3]}" == "1" ]] && { info "Downloading HiDream-I1..."; cd comfyui; bash download-models.sh hidream 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   ok "Image model downloads finished"
 fi
 

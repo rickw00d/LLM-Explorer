@@ -96,11 +96,13 @@ cd comfyui
 | Flux.2 Klein（9B fp8） | 圖片 | |
 | Qwen-Image-2512（bf16） | 圖片 | |
 | Z-Image Turbo（6B bf16） | 圖片 | 蒸餾版，較快 |
+| HiDream-I1 dev（fp8） | 圖片 | `./download-models.sh hidream`，不含在 `all` 內 |
+| H3 Turbo-8 / Turbo-4（LoRA） | 影片 | `./download-models.sh h3turbo`，另需 `h3` |
 
-> `download-models.sh` 和比較工具涵蓋的模型並不完全一致。Z-Image Turbo 下載得到，
-> 但比較工具沒有它的卡片；HiDream-I1 和 H3 Turbo-4/8 有卡片，卻沒有對應的下載器。
-> 這幾個請先在 ComfyUI 裡開一次官方範本（缺的檔案它會自己抓），再回到卡片上按
-> **🎯 Capture from ComfyUI**。
+> HiDream 和 H3 Turbo LoRA 刻意不放進 `all`：兩者都很大，而且 HiDream 的 VAE 檔名是
+> `ae.safetensors`，跟 Z-Image Turbo 的檔名完全相同但內容不同。下載器會記錄每個檔案
+> 來自哪個 repo，兩者撞名時直接告訴你，而不是默默讓其中一個模型拿到錯的 VAE。
+> Z-Image Turbo 下載得到，但比較工具沒有它的卡片。
 
 公平比對方法（同 prompt／同 seed）見
 [`comfyui/workflows/README.zh-TW.md`](comfyui/workflows/README.zh-TW.md)。

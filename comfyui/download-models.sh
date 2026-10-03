@@ -9,6 +9,8 @@
 #   ./download-models.sh flux2    # Flux.2 Klein only
 #   ./download-models.sh qwen     # Qwen-Image-2512 only
 #   ./download-models.sh zimage   # Z-Image Turbo only
+#   ./download-models.sh hidream  # HiDream-I1 dev fp8 only
+#   ./download-models.sh h3turbo  # MiniMax H3 Turbo-8 / Turbo-4 LoRAs (needs h3 as well)
 #
 # Requires the HuggingFace CLI, logged in (LTX-2.5 is a gated repo — accept its licence):
 #   pip install -U huggingface_hub
@@ -17,9 +19,9 @@
 # If a filename or path changes upstream, the safest fallback is opening the official
 # template in ComfyUI — it fetches whatever is missing (see workflows/README.md).
 #
-# Not everything the comparison tool can show is downloadable here: HiDream-I1 and the
-# H3 Turbo-4/8 variants have cards but no entry below, and zimage downloads but has no
-# card. Use the ComfyUI template route for those.
+# hidream and h3turbo are deliberately left out of "all": both are large, and HiDream's
+# VAE is named ae.safetensors, the same as Z-Image Turbo's different file. Ask for them
+# by name. Z-Image downloads but has no card in the comparison tool.
 #
 # Note: -e is deliberately omitted so one failed download (e.g. LTX without a login)
 # does not abort the remaining models.
@@ -76,7 +78,19 @@ dl(){
   local repo="$1" fname="$2" sub="$3"
   local dest="$COMFY/models/$sub"
   mkdir -p "$dest"
-  if [[ -f "$dest/$fname" ]]; then echo "  ✓ already present, skipping: $sub/$fname"; return 0; fi
+  if [[ -f "$dest/$fname" ]]; then
+    # Different repos ship different files under the same name — HiDream and Z-Image
+    # both call their VAE ae.safetensors. Record where each file came from, so the
+    # second one is reported instead of silently skipped as "already present".
+    local src=""; [[ -f "$dest/.$fname.from" ]] && src="$(cat "$dest/.$fname.from")"
+    if [[ -n "$src" && "$src" != "$repo" ]]; then
+      echo "  !! $sub/$fname is already here, but it came from $src, not $repo."
+      echo "     Those are different files sharing a name. Move the existing one aside"
+      echo "     if you need $repo's version, then re-run."
+      return 1
+    fi
+    echo "  ✓ already present, skipping: $sub/$fname"; return 0
+  fi
   if denied "$repo"; then echo "  – skipped, no access to $repo: $fname"; return 1; fi
   echo ">> downloading: $fname  ←  $repo"
   local err
@@ -91,7 +105,10 @@ dl(){
     return 1
   fi
   local found; found="$(find "$STAGE/$repo" -type f -name "$fname" | head -n1)"
-  if [[ -n "$found" ]]; then mv -f "$found" "$dest/$fname"; echo "  → $dest/$fname"; else
+  if [[ -n "$found" ]]; then
+    mv -f "$found" "$dest/$fname"; printf '%s\n' "$repo" > "$dest/.$fname.from"
+    echo "  → $dest/$fname"
+  else
     echo "  !! $fname not found in the repo — use the ComfyUI template to auto-download it"; return 1; fi
 }
 
@@ -146,17 +163,43 @@ get_zimage(){
   dl "Comfy-Org/z_image_turbo" "z_image_turbo_distill_patch_lora_bf16.safetensors" "loras"
 }
 
+get_hidream(){
+  echo "=== HiDream-I1 dev fp8 (Comfy-Org repack; four text encoders) ==="
+  dl "Comfy-Org/HiDream-I1_ComfyUI" "hidream_i1_dev_fp8.safetensors"              "diffusion_models"
+  dl "Comfy-Org/HiDream-I1_ComfyUI" "clip_l_hidream.safetensors"                  "text_encoders"
+  dl "Comfy-Org/HiDream-I1_ComfyUI" "clip_g_hidream.safetensors"                  "text_encoders"
+  dl "Comfy-Org/HiDream-I1_ComfyUI" "t5xxl_fp8_e4m3fn_scaled.safetensors"         "text_encoders"
+  dl "Comfy-Org/HiDream-I1_ComfyUI" "llama_3.1_8b_instruct_fp8_scaled.safetensors" "text_encoders"
+  # Note: Z-Image Turbo ships a different file under this same name. Whichever is
+  # fetched first wins; the guard in dl() reports the clash rather than hiding it.
+  dl "Comfy-Org/HiDream-I1_ComfyUI" "ae.safetensors"                              "vae"
+}
+
+get_h3turbo(){
+  echo "=== MiniMax H3 Turbo-8 / Turbo-4 (lightx2v distilled LoRAs) ==="
+  # The turbo workflows run on the NVFP4 base, not the int8 one that get_h3 fetches.
+  dl "Comfy-Org/MiniMax-H3" "minimax_h3_fl2va_pruned_nvfp4.safetensors" "diffusion_models"
+  dl "lightx2v/Minimax-h3-Turbo" "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors"      "loras"
+  dl "lightx2v/Minimax-h3-Turbo" "minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors" "loras"
+  echo "   (these LoRAs also need the H3 encoder and VAEs: ./download-models.sh h3)"
+}
+
 case "${1:-all}" in
-  ltx)    get_ltx ;;
-  wan)    get_wan ;;
-  h3)     get_h3 ;;
-  flux2)  get_flux2 ;;
-  qwen)   get_qwen_image ;;
-  zimage) get_zimage ;;
-  video)  get_ltx; get_wan; get_h3 ;;
-  image)  get_flux2; get_qwen_image; get_zimage ;;
-  all)    get_ltx; get_wan; get_h3; get_flux2; get_qwen_image; get_zimage ;;
-  *)      echo "Usage: $0 [ltx|wan|h3|flux2|qwen|zimage|video|image|all]"; exit 1 ;;
+  ltx)      get_ltx ;;
+  wan)      get_wan ;;
+  h3)       get_h3 ;;
+  h3turbo)  get_h3turbo ;;
+  flux2)    get_flux2 ;;
+  qwen)     get_qwen_image ;;
+  zimage)   get_zimage ;;
+  hidream)  get_hidream ;;
+  video)    get_ltx; get_wan; get_h3 ;;
+  image)    get_flux2; get_qwen_image; get_zimage ;;
+  all)      get_ltx; get_wan; get_h3; get_flux2; get_qwen_image; get_zimage ;;
+  *)        echo "Usage: $0 [ltx|wan|h3|h3turbo|flux2|qwen|zimage|hidream|video|image|all]"
+            echo "  h3turbo and hidream are not in 'all': each is large, and hidream's VAE"
+            echo "  shares a filename with Z-Image Turbo's. Ask for them by name."
+            exit 1 ;;
 esac
 
 echo

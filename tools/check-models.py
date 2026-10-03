@@ -74,7 +74,9 @@ for t in sorted(set(dispatch) - {"video", "image", "all"}):
                         f"— remove it, or add the card")
 
 # weights a card loads that the downloader cannot fetch
-SERVED_BY = {"h3t8": ["h3turbo", "h3"], "h3t4": ["h3turbo", "h3"]}
+# The h3 card was captured with the Turbo-8 LoRA applied, so it needs h3turbo too.
+SERVED_BY = {"h3": ["h3", "h3turbo"],
+             "h3t8": ["h3turbo", "h3"], "h3t4": ["h3turbo", "h3"]}
 for c in sorted(wf_cards & set(cards)):
     wfp = next(WF.glob(f"{c}.*.json"), None)
     if wfp is None or wfp.name.endswith(".meta.json"):

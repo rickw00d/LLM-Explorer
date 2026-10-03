@@ -90,18 +90,22 @@ cd comfyui
 
 | 模型 | 类型 | 备注 |
 |---|---|---|
-| LTX-2.5（Lightricks，22B int8） | 视频 | gated repo，需先接受授权 |
-| MiniMax H3 / Hailuo 3.0（int8） | 视频 | 用**本地开放权重版**模板，不要用 API 版 |
-| Wan 2.2 T2V 14B（fp8） | 视频 | 单张输出即等同文生图 |
-| Flux.2 Klein（9B fp8） | 图像 | |
-| Qwen-Image-2512（bf16） | 图像 | |
-| HiDream-I1 dev（fp8） | 图像 | 需要四个文本编码器 |
+| LTX-2.5（Lightricks，22B fp8_e4m3fn） | 视频 | gated repo，需先接受授权 |
+| MiniMax H3 / Hailuo 3.0（NVFP4） | 视频 | 用**本地开放权重版**模板，不要用 API 版 |
+| Wan 2.2 T2V 14B（fp8） | 视频 | 搭配 lightx2v 蒸馏 LoRA，跑 4 步 |
 | H3 Turbo-8 / Turbo-4（LoRA） | 视频 | 蒸馏版，另需 `h3` 的文件 |
+| FLUX.2 Dev（NVFP4 mixed） | 图像 | Mistral 3 Small 编码器；权重分散在三个 repo |
+| Qwen-Image-2512（fp8_e4m3fn） | 图像 | |
+| HiDream-I1 dev（fp8） | 图像 | 需要四个文本编码器 |
 
 > 下载目标对应对比工具上有的卡片。Z-Image Turbo 已从该界面移除，因此不再下载。
 > 不同 repo 偶尔会用同一个文件名放不同文件（最常见的是 `ae.safetensors`），所以下载器
 > 会记录每个文件来自哪个 repo，换另一个 repo 要用同名文件时直接告诉你，
 > 而不是让某个模型默默套到错的 VAE。
+>
+> 这里列的版本就是 `compare/workflows/` 里捕获到的 workflow 实际加载的版本。
+> 运行 `python3 tools/check-models.py` 会比对三份清单——`compare/server.py` 的卡片、
+> 各 workflow 实际选用的权重、以及下载目标——再次出现落差时就会失败。
 
 公平对比方法（同 prompt／同 seed）见
 [`comfyui/workflows/README.zh-CN.md`](comfyui/workflows/README.zh-CN.md)。

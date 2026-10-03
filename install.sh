@@ -73,7 +73,7 @@ items=(
   "System bootstrap (packages, Docker, CUDA checks)"
   "ComfyUI environment (venv + PyTorch cu130)"
   "Video models (LTX-2.5 / MiniMax H3 / Wan 2.2 / H3 Turbo)"
-  "Image models (FLUX.2 / Qwen-Image / HiDream-I1)"
+  "Image models (FLUX.2 Dev / Qwen-Image / HiDream-I1)"
   "Start ComfyUI + the comparison tool"
   "Chatbot (Open WebUI + Ollama + LLMs)"
   "Start at boot (systemd user services)"
@@ -320,12 +320,12 @@ fi
 if [[ "$DO_IMAGE" == "1" ]]; then
   step "Download image models"
 
-  img_items=("FLUX.2 (9B fp8)" "Qwen-Image-2512 (bf16)" "HiDream-I1 dev (fp8)")
+  img_items=("FLUX.2 Dev (NVFP4 mixed)" "Qwen-Image-2512 (fp8)" "HiDream-I1 dev (fp8)")
   img_sel=(1 1 1)
   for _ in "${!img_items[@]}"; do echo; done; echo; echo; echo
   toggle_menu "Select image models to download:" img_items img_sel
 
-  [[ "${img_sel[0]}" == "1" ]] && { info "Downloading Flux.2 Klein..."; cd comfyui; bash download-models.sh flux2 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
+  [[ "${img_sel[0]}" == "1" ]] && { info "Downloading FLUX.2 Dev..."; cd comfyui; bash download-models.sh flux2 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   [[ "${img_sel[1]}" == "1" ]] && { info "Downloading Qwen-Image-2512..."; cd comfyui; bash download-models.sh qwen 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   [[ "${img_sel[2]}" == "1" ]] && { info "Downloading HiDream-I1..."; cd comfyui; bash download-models.sh hidream 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   ok "Image model downloads finished"

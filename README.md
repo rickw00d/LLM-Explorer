@@ -39,7 +39,7 @@ Menu items:
 1. System bootstrap — packages, Docker, CUDA checks
 2. ComfyUI environment — venv + PyTorch cu130
 3. Video models — LTX-2.5 / MiniMax H3 / Wan 2.2
-4. Image models — FLUX.2 / Qwen-Image / HiDream-I1
+4. Image models — FLUX.2 Dev / Qwen-Image / HiDream-I1
 5. Start ComfyUI + comparison tool
 6. Chatbot — Open WebUI + Ollama + LLMs
 
@@ -92,19 +92,24 @@ Models covered:
 
 | Model | Type | Notes |
 |---|---|---|
-| LTX-2.5 (Lightricks, 22B int8) | video | gated repo — accept the licence first |
-| MiniMax H3 / Hailuo 3.0 (int8) | video | use the **Local / open-weights** templates, not the API ones |
-| Wan 2.2 T2V 14B (fp8) | video | a single-frame output is effectively text-to-image |
-| Flux.2 Klein (9B fp8) | image | |
-| Qwen-Image-2512 (bf16) | image | |
-| HiDream-I1 dev (fp8) | image | four text encoders |
+| LTX-2.5 (Lightricks, 22B fp8_e4m3fn) | video | gated repo — accept the licence first |
+| MiniMax H3 / Hailuo 3.0 (NVFP4) | video | use the **Local / open-weights** templates, not the API ones |
+| Wan 2.2 T2V 14B (fp8) | video | runs 4 steps with the lightx2v distillation LoRAs |
 | H3 Turbo-8 / Turbo-4 (LoRAs) | video | distilled; also needs the `h3` files |
+| FLUX.2 Dev (NVFP4 mixed) | image | Mistral 3 Small encoder; weights span three repos |
+| Qwen-Image-2512 (fp8_e4m3fn) | image | |
+| HiDream-I1 dev (fp8) | image | four text encoders |
 
 > The download targets mirror the cards the comparison tool shows. Z-Image Turbo was
 > removed from that UI, so it is no longer downloaded. Different repos sometimes ship
 > different files under one name — `ae.safetensors` is the usual culprit — so the
 > downloader records where each file came from and says so when a second repo wants
 > that name, instead of leaving a model on the wrong VAE.
+>
+> The builds listed here are the ones the captured workflows in `compare/workflows/`
+> actually load. `python3 tools/check-models.py` compares the three lists — the cards
+> in `compare/server.py`, the weights each workflow selects, and the download targets —
+> and fails if they drift apart again.
 
 Fair-comparison method (same prompt / same seed): see
 [`comfyui/workflows/README.md`](comfyui/workflows/README.md).

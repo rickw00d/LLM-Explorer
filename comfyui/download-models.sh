@@ -6,7 +6,7 @@
 #   ./download-models.sh          # everything (video + image)
 #   ./download-models.sh video    # video models (ltx + wan + h3 + h3turbo)
 #   ./download-models.sh image    # image models (flux2 + qwen + hidream)
-#   ./download-models.sh flux2    # Flux.2 Klein only
+#   ./download-models.sh flux2    # FLUX.2 Dev only
 #   ./download-models.sh qwen     # Qwen-Image-2512 only
 #   ./download-models.sh hidream  # HiDream-I1 dev fp8 only
 #   ./download-models.sh h3turbo  # MiniMax H3 Turbo-8 / Turbo-4 LoRAs (needs h3 as well)
@@ -112,13 +112,13 @@ dl(){
 
 get_ltx(){
   echo "=== LTX-2.5 (Lightricks, gated; text encoder is Gemma-4) ==="
-  dl "Lightricks/LTX-2.5" "ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors" "diffusion_models"
+  dl "Lightricks/LTX-2.5" "ltx-2.5-22b-distilled-transformer-fp8_e4m3fn.safetensors"           "diffusion_models"
   dl "Lightricks/LTX-2.5" "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors"       "text_encoders"
   dl "Lightricks/LTX-2.5" "ltx-2.5-video-vae-bf16.safetensors"                                 "vae"
   dl "Lightricks/LTX-2.5" "ltx-2.5-audio-vae-bf16.safetensors"                                 "vae"
-  # Optional: prompt enhancer / upscaler — uncomment to use
-  # dl "Lightricks/LTX-2.5" "gemma4_e2b_it_int8_convrot.safetensors" "text_encoders"
-  # dl "Lightricks/LTX-2.5" "ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors" "latent_upscale_models"
+  # The comparison workflow uses both of these, so they are not optional here.
+  dl "Lightricks/LTX-2.5" "gemma4_e2b_it_int8_convrot.safetensors"                             "text_encoders"
+  dl "Lightricks/LTX-2.5" "ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors"            "latent_upscale_models"
 }
 
 get_wan(){
@@ -127,11 +127,14 @@ get_wan(){
   dl "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors"  "diffusion_models"
   dl "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "umt5_xxl_fp8_e4m3fn_scaled.safetensors"           "text_encoders"
   dl "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "wan_2.1_vae.safetensors"                          "vae"
+  # The comparison workflow runs 4 steps with these distillation LoRAs applied.
+  dl "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors" "loras"
+  dl "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise.safetensors"  "loras"
 }
 
 get_h3(){
   echo "=== MiniMax H3 / Hailuo 3.0 (Comfy-Org, local open weights int8; Qwen3-VL NVFP4 encoder) ==="
-  dl "Comfy-Org/MiniMax-H3" "minimax_h3_fl2va_pruned_int8_convrot.safetensors" "diffusion_models"
+  dl "Comfy-Org/MiniMax-H3" "minimax_h3_fl2va_pruned_nvfp4.safetensors"        "diffusion_models"
   dl "Comfy-Org/MiniMax-H3" "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"     "text_encoders"
   dl "Comfy-Org/MiniMax-H3" "minimax_h3_video_vae_fp16.safetensors"            "vae"
   dl "Comfy-Org/MiniMax-H3" "minimax_h3_audio_vae_fp32.safetensors"            "vae"
@@ -140,15 +143,17 @@ get_h3(){
 }
 
 get_flux2(){
-  echo "=== Flux.2 Klein 9B (Black Forest Labs, text-to-image) ==="
-  dl "black-forest-labs/FLUX.2-klein-9b-fp8" "flux-2-klein-9b-fp8.safetensors"  "diffusion_models"
-  dl "Comfy-Org/vae-text-encorder-for-flux-klein-9b" "flux2-vae.safetensors"    "vae"
-  dl "Comfy-Org/vae-text-encorder-for-flux-klein-9b" "qwen_3_8b.safetensors"   "text_encoders"
+  echo "=== FLUX.2 Dev NVFP4 mixed (Black Forest Labs; Mistral 3 Small text encoder) ==="
+  # Three different repos: the NVFP4 transformer and the small-decoder VAE come from
+  # Black Forest Labs, the ComfyUI-ready text encoder from Comfy-Org's repack.
+  dl "black-forest-labs/FLUX.2-dev-NVFP4" "flux2-dev-nvfp4-mixed.safetensors"      "diffusion_models"
+  dl "Comfy-Org/flux2-dev" "mistral_3_small_flux2_bf16.safetensors"                "text_encoders"
+  dl "black-forest-labs/FLUX.2-small-decoder" "full_encoder_small_decoder.safetensors" "vae"
 }
 
 get_qwen_image(){
   echo "=== Qwen-Image-2512 (Alibaba, text-to-image) ==="
-  dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_image_2512_bf16.safetensors"        "diffusion_models"
+  dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_image_2512_fp8_e4m3fn.safetensors" "diffusion_models"
   dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_2.5_vl_7b_fp8_scaled.safetensors"  "text_encoders"
   dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_image_vae.safetensors"             "vae"
 }
@@ -165,8 +170,6 @@ get_hidream(){
 
 get_h3turbo(){
   echo "=== MiniMax H3 Turbo-8 / Turbo-4 (lightx2v distilled LoRAs) ==="
-  # The turbo workflows run on the NVFP4 base, not the int8 one that get_h3 fetches.
-  dl "Comfy-Org/MiniMax-H3" "minimax_h3_fl2va_pruned_nvfp4.safetensors" "diffusion_models"
   dl "lightx2v/Minimax-h3-Turbo" "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors"      "loras"
   dl "lightx2v/Minimax-h3-Turbo" "minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors" "loras"
   echo "   (these LoRAs also need the H3 encoder and VAEs: ./download-models.sh h3)"

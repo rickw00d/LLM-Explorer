@@ -15,7 +15,7 @@ panel), then search for:
 - **LTX-2.5** — official T2V / I2V / with-audio templates
 - **Wan 2.2** — T2V (a single-frame output is effectively text-to-image)
 - **MiniMax H3** — pick the three **Local / open-weights** templates, **not** the API ones
-- **FLUX.2**, **Qwen-Image**, **HiDream-I1** — text-to-image templates
+- **FLUX.2 Dev**, **Qwen-Image**, **HiDream-I1** — text-to-image templates
 
 Online references:
 

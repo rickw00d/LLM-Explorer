@@ -1,10 +1,24 @@
+<div align="center">
+
+# LLM Explorer
+
+**A local AI workstation for DGX Spark (GB10 Grace Blackwell)**
+
+Chat with several LLMs, generate images and video with ComfyUI, and compare
+generative models side by side from a single prompt — all on one machine.
+
+[![Platform](https://img.shields.io/badge/platform-DGX%20Spark%20·%20GB10-76B900)](https://www.nvidia.com/en-us/products/workstations/dgx-spark/)
+[![Arch](https://img.shields.io/badge/arch-aarch64-blue)](#)
+[![CUDA](https://img.shields.io/badge/CUDA-13.0%20·%20sm__121-green)](#)
+[![OS](https://img.shields.io/badge/Ubuntu-24.04-E95420)](#)
+[![Docs](https://img.shields.io/badge/docs-en%20·%20zh--TW%20·%20zh--CN-informational)](#languages)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
+
 **English** · [繁體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
 
-# LLM Explorer — Local AI Workstation on DGX Spark (GB10)
+</div>
 
-Three local services on a **GB10 Grace Blackwell** box (128 GB unified memory):
-chat with multiple LLMs, generate images and video with ComfyUI, and compare
-several generative models side by side from a single prompt.
+---
 
 | Service | Purpose | URL | Directory |
 |---|---|---|---|
@@ -22,6 +36,20 @@ several generative models side by side from a single prompt.
 Hardware limits and memory management: [`docs/notes.md`](docs/notes.md).
 
 ---
+
+## Contents
+
+- [Quick start: one-shot installer](#quick-start-one-shot-installer)
+- [0. One-time prerequisites](#0-one-time-prerequisites)
+- [1. Chatbot (multi-LLM)](#1-chatbot-multi-llm)
+- [2. ComfyUI (image/video generation)](#2-comfyui-imagevideo-generation)
+- [3. Model comparison tool](#3-model-comparison-tool)
+- [4. Public access (optional)](#4-public-access-optional)
+- [5. Start at boot (optional)](#5-start-at-boot-optional)
+- [Things to keep in mind](#things-to-keep-in-mind)
+- [Languages](#languages)
+- [Repository layout](#repository-layout)
+- [Project documentation](#project-documentation)
 
 ## Quick start: one-shot installer
 
@@ -238,3 +266,28 @@ LLM-Explorer/
 ├── space/                      # HuggingFace Space frontend
 └── docs/                       # documentation + GitHub Pages (index.html, i18n.js)
 ```
+
+---
+
+## Project documentation
+
+| Document | What it covers |
+|---|---|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | The checks to run, the language policy, and how to add a model card end to end |
+| [SECURITY.md](SECURITY.md) | What each service exposes, public mode, the tunnel interlock, hardening |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Service topology, the generation flow, i18n design, process supervision |
+| [docs/notes.md](docs/notes.md) | Hardware limits, memory management, troubleshooting |
+| [CHANGELOG.md](CHANGELOG.md) | What has changed |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Contributor Covenant 2.1 |
+
+Consistency checks, both of which should pass on a clean checkout:
+
+```bash
+python3 tools/check-i18n.py     # the three translation tables agree
+python3 tools/check-models.py   # cards, workflows and download targets agree
+```
+
+## Licence
+
+Not yet chosen. Until a `LICENSE` file is added, default copyright applies and no
+permission is granted to reuse this code. If you want to use it, please open an issue.

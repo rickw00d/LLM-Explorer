@@ -1,9 +1,24 @@
+<div align="center">
+
+# LLM Explorer
+
+**DGX Spark（GB10 Grace Blackwell）本地 AI 工作站**
+
+在同一台機器上跟多個 LLM 對話、用 ComfyUI 生圖與生影片，
+並以同一個 prompt 並排比較多個生成式模型。
+
+[![Platform](https://img.shields.io/badge/platform-DGX%20Spark%20·%20GB10-76B900)](https://www.nvidia.com/en-us/products/workstations/dgx-spark/)
+[![Arch](https://img.shields.io/badge/arch-aarch64-blue)](#)
+[![CUDA](https://img.shields.io/badge/CUDA-13.0%20·%20sm__121-green)](#)
+[![OS](https://img.shields.io/badge/Ubuntu-24.04-E95420)](#)
+[![Docs](https://img.shields.io/badge/docs-en%20·%20zh--TW%20·%20zh--CN-informational)](#語言)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.zh-TW.md)
+
 [English](README.md) · **繁體中文** · [简体中文](README.zh-CN.md)
 
-# LLM Explorer — DGX Spark（GB10）本地 AI 工作站
+</div>
 
-在一台 **GB10 Grace Blackwell**（128GB 統一記憶體）上跑三套本地服務：多 LLM 聊天、
-用 ComfyUI 生圖／生影片，以及「同一個 prompt、多模型並排比較」的網頁工具。
+---
 
 | 服務 | 用途 | 網址 | 目錄 |
 |---|---|---|---|
@@ -20,6 +35,20 @@
 硬體限制與記憶體管理見 [`docs/notes.zh-TW.md`](docs/notes.zh-TW.md)。
 
 ---
+
+## 目錄
+
+- [快速開始：一鍵安裝](#快速開始一鍵安裝)
+- [0. 一次性前置](#0-一次性前置)
+- [1. Chatbot（多 LLM）](#1-chatbot多-llm)
+- [2. ComfyUI（生圖／生影片）](#2-comfyui生圖生影片)
+- [3. 模型比較工具](#3-模型比較工具)
+- [4. 對外開放（選用）](#4-對外開放選用)
+- [5. 開機自動啟動（選用）](#5-開機自動啟動選用)
+- [重要提醒](#重要提醒)
+- [語言](#語言)
+- [目錄結構](#目錄結構)
+- [專案文件](#專案文件)
 
 ## 快速開始：一鍵安裝
 
@@ -223,3 +252,28 @@ LLM-Explorer/
 ├── space/                      # HuggingFace Space 前端
 └── docs/                       # 說明文件 + GitHub Pages（index.html、i18n.js）
 ```
+
+---
+
+## 專案文件
+
+| 文件 | 內容 |
+|---|---|
+| [CONTRIBUTING.zh-TW.md](CONTRIBUTING.zh-TW.md) | 該跑哪些檢查、語言政策、以及如何從頭到尾新增一張模型卡片 |
+| [SECURITY.zh-TW.md](SECURITY.zh-TW.md) | 各服務暴露什麼、對外模式、通道互鎖、強化清單 |
+| [docs/ARCHITECTURE.zh-TW.md](docs/ARCHITECTURE.zh-TW.md) | 服務拓樸、生成流程、i18n 設計、行程監管 |
+| [docs/notes.zh-TW.md](docs/notes.zh-TW.md) | 硬體限制、記憶體管理、疑難排解 |
+| [CHANGELOG.md](CHANGELOG.md) | 變更紀錄（英文） |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Contributor Covenant 2.1（英文） |
+
+一致性檢查，乾淨的 checkout 上兩個都該通過：
+
+```bash
+python3 tools/check-i18n.py     # 三份翻譯表是否一致
+python3 tools/check-models.py   # 卡片、workflow、下載目標是否一致
+```
+
+## 授權
+
+**尚未選定。** 在加入 `LICENSE` 檔案之前，適用預設著作權，未授予任何重用本程式碼的權利。
+若你想使用，請開一個 issue 詢問。

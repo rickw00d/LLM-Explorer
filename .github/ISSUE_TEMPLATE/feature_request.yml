@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest a model, a workflow, or a change to the tooling
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of request?
+      options:
+        - A new model card in the comparison tool
+        - A change to an existing workflow
+        - Tooling or scripts
+        - Documentation
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation you are in, not only the change you want.
+    validations:
+      required: true
+
+  - type: textarea
+    id: model-details
+    attributes:
+      label: For a new model — where do the weights live?
+      description: |
+        The HuggingFace repository id and the exact filenames, plus which `ComfyUI/models/`
+        subfolder each belongs in. A card is only useful once `download-models.sh` can fetch it.
+      placeholder: |
+        repo:  Comfy-Org/Example_ComfyUI
+        files: example_dev_fp8.safetensors      -> diffusion_models
+               example_text_encoder.safetensors -> text_encoders
+               example_vae.safetensors          -> vae

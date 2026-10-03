@@ -20,8 +20,6 @@ cd "$SCRIPT_DIR"
 LOG="$SCRIPT_DIR/install.log"
 echo "=== LLM Explorer install $(date) ===" > "$LOG"
 
-run_logged() { "$@" >> "$LOG" 2>&1; }
-
 clear
 echo ""
 echo -e "${BOLD}╔══════════════════════════════════════════════════╗${NC}"
@@ -39,7 +37,6 @@ toggle_menu() {
   local cur=0 count=${#_items[@]}
 
   while true; do
-    # Clear the previous render (count+3 lines: title + items + hint)
     # Clear the previous render (count+3 lines: title + items + hint)
     if [[ $cur -ge 0 ]]; then
       tput cuu $((count + 3)) 2>/dev/null || true
@@ -75,12 +72,13 @@ toggle_menu() {
 items=(
   "System bootstrap (packages, Docker, CUDA checks)"
   "ComfyUI environment (venv + PyTorch cu130)"
-  "Video models (LTX-2.5 / MiniMax H3 / Wan 2.2)"
-  "Image models (Flux.2 Klein / Qwen-Image / Z-Image Turbo)"
+  "Video models (LTX-2.5 / MiniMax H3 / Wan 2.2 / H3 Turbo)"
+  "Image models (FLUX.2 Dev / Qwen-Image / HiDream-I1)"
   "Start ComfyUI + the comparison tool"
   "Chatbot (Open WebUI + Ollama + LLMs)"
+  "Start at boot (systemd user services)"
 )
-selected=(0 0 0 0 0 0)   # nothing selected by default — use Space to pick
+selected=(0 0 0 0 0 0 0)   # nothing selected by default — use Space to pick
 
 # Reserve screen space
 for _ in "${!items[@]}"; do echo; done; echo; echo; echo
@@ -96,9 +94,10 @@ DO_VIDEO=${selected[2]}
 DO_IMAGE=${selected[3]}
 DO_START=${selected[4]}
 DO_CHATBOT=${selected[5]}
+DO_BOOT=${selected[6]}
 
 # Nothing selected → exit
-if [[ "$DO_SYSTEM$DO_COMFYUI$DO_VIDEO$DO_IMAGE$DO_START$DO_CHATBOT" == "000000" ]]; then
+if [[ "$DO_SYSTEM$DO_COMFYUI$DO_VIDEO$DO_IMAGE$DO_START$DO_CHATBOT$DO_BOOT" == "0000000" ]]; then
   warn "Nothing selected, exiting."
   exit 0
 fi
@@ -121,6 +120,7 @@ count_steps() {
   [[ "$DO_IMAGE"   == "1" ]] && ((total++))
   [[ "$DO_START"   == "1" ]] && ((total++))
   [[ "$DO_CHATBOT" == "1" ]] && ((total++))
+  [[ "$DO_BOOT"    == "1" ]] && ((total++))
   echo $total
 }
 TOTAL=$(count_steps)
@@ -190,8 +190,12 @@ if [[ "$DO_SYSTEM" == "1" ]]; then
   else
     info "Installing missing packages: ${NEED[*]}"
     sudo apt-get update -qq >> "$LOG" 2>&1
-    sudo apt-get install -y "${NEED[@]}" >> "$LOG" 2>&1
-    ok "Packages installed"
+    if sudo apt-get install -y "${NEED[@]}" >> "$LOG" 2>&1; then
+      ok "Packages installed"
+    else
+      fail "apt-get failed — see the end of $LOG"
+      tail -n 5 "$LOG" | sed 's/^/     /'
+    fi
   fi
 
   # ── Docker ──
@@ -273,15 +277,17 @@ if [[ "$DO_VIDEO" == "1" || "$DO_IMAGE" == "1" ]]; then
   HF="$SCRIPT_DIR/comfyui/comfyui-env/bin/hf"
   if [[ ! -x "$HF" ]]; then
     info "Installing the HuggingFace CLI..."
-    "$SCRIPT_DIR/comfyui/comfyui-env/bin/pip" install -U "huggingface_hub[cli]" -q >> "$LOG" 2>&1
+    # The [cli] extra was removed in huggingface_hub 2.x; hf ships in the base package.
+    "$SCRIPT_DIR/comfyui/comfyui-env/bin/pip" install -U huggingface_hub -q >> "$LOG" 2>&1
   fi
-  if "$HF" auth status &>/dev/null 2>&1; then
-    ok "HuggingFace: logged in"
+  # whoami, not status: there is no `hf auth status` subcommand, and asking for one
+  # exits 2, which made this check report "not logged in" even when you were.
+  if HF_USER="$("$HF" auth whoami 2>/dev/null | head -n1)" && [[ -n "$HF_USER" ]]; then
+    ok "HuggingFace: logged in as $HF_USER"
   else
     warn "HuggingFace: not logged in"
     echo ""
-    echo "  LTX-2.5 is a gated repo: you must log in and accept its licence."
-    echo "  LTX-2.5 is a gated repo: you must log in and accept its licence."
+    echo "  LTX-2.5 is a gated repo: you must log in AND accept its licence."
     echo "  1. Run: $HF auth login"
     echo "  2. Accept the licence at https://huggingface.co/Lightricks/LTX-2.5"
     echo ""
@@ -295,14 +301,16 @@ fi
 if [[ "$DO_VIDEO" == "1" ]]; then
   step "Download video models"
 
-  vid_items=("LTX-2.5 (Lightricks, 22B int8)" "MiniMax H3 (Hailuo 3.0, int8)" "Wan 2.2 (14B fp8)")
-  vid_sel=(1 1 1)
+  vid_items=("LTX-2.5 (Lightricks, 22B int8)" "MiniMax H3 (Hailuo 3.0, int8)" "Wan 2.2 (14B fp8)" \
+             "H3 Turbo-8 / Turbo-4 LoRAs (needs MiniMax H3)")
+  vid_sel=(1 1 1 0)
   for _ in "${!vid_items[@]}"; do echo; done; echo; echo; echo
   toggle_menu "Select video models to download:" vid_items vid_sel
 
   [[ "${vid_sel[0]}" == "1" ]] && { info "Downloading LTX-2.5..."; cd comfyui; bash download-models.sh ltx 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   [[ "${vid_sel[1]}" == "1" ]] && { info "Downloading MiniMax H3..."; cd comfyui; bash download-models.sh h3 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   [[ "${vid_sel[2]}" == "1" ]] && { info "Downloading Wan 2.2..."; cd comfyui; bash download-models.sh wan 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
+  [[ "${vid_sel[3]}" == "1" ]] && { info "Downloading the H3 Turbo LoRAs..."; cd comfyui; bash download-models.sh h3turbo 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   ok "Video model downloads finished"
 fi
 
@@ -312,14 +320,14 @@ fi
 if [[ "$DO_IMAGE" == "1" ]]; then
   step "Download image models"
 
-  img_items=("Flux.2 Klein (9B fp8)" "Qwen-Image-2512 (bf16)" "Z-Image Turbo (6B bf16)")
+  img_items=("FLUX.2 Dev (NVFP4 mixed)" "Qwen-Image-2512 (fp8)" "HiDream-I1 dev (fp8)")
   img_sel=(1 1 1)
   for _ in "${!img_items[@]}"; do echo; done; echo; echo; echo
   toggle_menu "Select image models to download:" img_items img_sel
 
-  [[ "${img_sel[0]}" == "1" ]] && { info "Downloading Flux.2 Klein..."; cd comfyui; bash download-models.sh flux2 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
+  [[ "${img_sel[0]}" == "1" ]] && { info "Downloading FLUX.2 Dev..."; cd comfyui; bash download-models.sh flux2 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   [[ "${img_sel[1]}" == "1" ]] && { info "Downloading Qwen-Image-2512..."; cd comfyui; bash download-models.sh qwen 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
-  [[ "${img_sel[2]}" == "1" ]] && { info "Downloading Z-Image Turbo..."; cd comfyui; bash download-models.sh zimage 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
+  [[ "${img_sel[2]}" == "1" ]] && { info "Downloading HiDream-I1..."; cd comfyui; bash download-models.sh hidream 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"; }
   ok "Image model downloads finished"
 fi
 
@@ -329,21 +337,16 @@ fi
 if [[ "$DO_START" == "1" ]]; then
   step "Start ComfyUI + the comparison tool"
 
-  info "Starting ComfyUI..."
-  cd comfyui; bash start.sh; cd "$SCRIPT_DIR"
-
-  info "Waiting for ComfyUI to come up..."
-  for i in $(seq 1 30); do
-    if curl -s -o /dev/null http://localhost:8188 2>/dev/null; then
-      ok "ComfyUI → http://localhost:8188"
-      break
-    fi
-    [[ $i -eq 30 ]] && warn "ComfyUI start timed out — check comfyui/comfyui.log"
-    sleep 2
-  done
-
-  info "Starting the comparison tool..."
+  # compare/start.sh brings ComfyUI up first and waits for it, so one call does both.
+  info "Starting ComfyUI and the comparison tool..."
   cd compare; bash start.sh; cd "$SCRIPT_DIR"
+
+  if curl -sf -o /dev/null --max-time 2 http://localhost:8188/system_stats 2>/dev/null; then
+    ok "ComfyUI → http://localhost:8188"
+  else
+    warn "ComfyUI is not answering yet — it may still be loading models."
+    echo "     Follow it with: tail -f comfyui/comfyui.log"
+  fi
   ok "Comparison tool → http://localhost:8890"
 
   # Open the browser automatically
@@ -373,9 +376,6 @@ if [[ "$DO_CHATBOT" == "1" ]]; then
     cd chatbot; bash start.sh 2>&1 | tee -a "$LOG"; cd "$SCRIPT_DIR"
 
     echo ""
-    # Read the list from chatbot/models.txt rather than hard-coding it here, so the
-    # menu never goes stale. Uncommented lines are pre-selected; a commented line whose
-    # body is a valid tag counts as optional and starts unselected.
     # The list comes from chatbot/models.txt rather than being hard-coded here, so the
     # menu never goes stale. Uncommented lines start selected; a commented line whose
     # body is a valid tag counts as optional and starts unselected.
@@ -426,6 +426,18 @@ PYEOF
 fi
 
 # ═══════════════════════════════════════════════════════════════
+# Start at boot
+# ═══════════════════════════════════════════════════════════════
+if [[ "$DO_BOOT" == "1" ]]; then
+  step "Start at boot (systemd user services)"
+  if bash "$SCRIPT_DIR/systemd/install.sh" 2>&1 | tee -a "$LOG"; then
+    ok "ComfyUI and the comparison tool will start at boot"
+  else
+    fail "systemd/install.sh failed — see above, and $LOG"
+  fi
+fi
+
+# ═══════════════════════════════════════════════════════════════
 # Finished
 # ═══════════════════════════════════════════════════════════════
 echo ""
@@ -441,8 +453,9 @@ echo "  │ Chatbot (WebUI)  │ http://localhost:8080     │"
 echo "  └──────────────────┴───────────────────────────┘"
 echo ""
 echo -e "  ${BOLD}Common commands${NC}"
-echo "  Start all: comfyui/start.sh && compare/start.sh && chatbot/start.sh"
-echo "  Stop all:  comfyui/stop.sh && compare/stop.sh && chatbot/stop.sh"
+echo "  Start: compare/start.sh   (brings ComfyUI up too) · chatbot/start.sh"
+echo "  Stop:  compare/stop.sh    (stops both)            · chatbot/stop.sh"
+echo "  Boot:  bash systemd/install.sh   (start at boot, then systemctl --user status comfyui llm-compare)"
 echo ""
 echo -e "  ${DIM}Full log: $LOG${NC}"
 echo ""

@@ -1,0 +1,67 @@
+name: Bug report
+description: Something does not work on your machine
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, please run the two consistency checks and paste their output below —
+        most "a model will not load" reports are answered by them.
+
+        ```bash
+        python3 tools/check-models.py
+        python3 tools/check-i18n.py
+        ```
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Which part?
+      options:
+        - Comparison tool (port 8890)
+        - ComfyUI (port 8188)
+        - Chatbot / Open WebUI (port 8080)
+        - install.sh
+        - Model downloads
+        - Start at boot (systemd)
+        - HuggingFace Space frontend
+        - Documentation
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: |
+        `comfyui/comfyui.log`, `compare/compare.log`, `install.log`, or
+        `journalctl --user -u comfyui -n 50`. Paste the lines around the failure, not the whole file.
+      render: shell
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Paste the output of the command below.
+      value: |
+        <!-- bash -c 'uname -m; . /etc/os-release && echo "$PRETTY_NAME"; nvcc --version | tail -1; nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader; git -C . rev-parse --short HEAD' -->
+      render: shell
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I am not pasting a token, `compare/.token`, or any other secret into this issue.
+          required: true

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/rickw00d/LLM-Explorer/security/advisories/new
+    about: Report privately instead of opening a public issue. See SECURITY.md.
+  - name: Hardware and memory notes
+    url: https://github.com/rickw00d/LLM-Explorer/blob/main/docs/notes.md
+    about: OOM, VRAM limits and DGX Spark specifics are covered here first.

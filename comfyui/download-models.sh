@@ -4,18 +4,22 @@
 # The files are large — roughly 20-40 GB per model.
 #
 #   ./download-models.sh          # everything (video + image)
-#   ./download-models.sh video    # video models (ltx + wan + h3)
-#   ./download-models.sh image    # image models (flux2 + qwen + zimage)
-#   ./download-models.sh flux2    # Flux.2 Klein only
+#   ./download-models.sh video    # video models (ltx + wan + h3 + h3turbo)
+#   ./download-models.sh image    # image models (flux2 + qwen + hidream)
+#   ./download-models.sh flux2    # FLUX.2 Dev only
 #   ./download-models.sh qwen     # Qwen-Image-2512 only
-#   ./download-models.sh zimage   # Z-Image Turbo only
+#   ./download-models.sh hidream  # HiDream-I1 dev fp8 only
+#   ./download-models.sh h3turbo  # MiniMax H3 Turbo-8 / Turbo-4 LoRAs (needs h3 as well)
 #
 # Requires the HuggingFace CLI, logged in (LTX-2.5 is a gated repo — accept its licence):
-#   pip install -U "huggingface_hub[cli]"
+#   pip install -U huggingface_hub
 #   hf auth login
 #
 # If a filename or path changes upstream, the safest fallback is opening the official
 # template in ComfyUI — it fetches whatever is missing (see workflows/README.md).
+#
+# The targets here mirror the cards the comparison tool shows. Z-Image Turbo used to be
+# downloaded but was removed from that UI, so it is no longer fetched.
 #
 # Note: -e is deliberately omitted so one failed download (e.g. LTX without a login)
 # does not abort the remaining models.
@@ -29,35 +33,92 @@ mkdir -p "$STAGE"
 # Prefer the hf CLI inside the ComfyUI venv (installed by setup.sh) to avoid system pip limits
 if [[ -x "$VENV/bin/hf" ]]; then HF="$VENV/bin/hf"; PY="$VENV/bin/python"
 elif command -v hf >/dev/null 2>&1; then HF="hf"; PY="python3"
-else echo "!! hf CLI not found — run ./setup.sh first, or pip install -U 'huggingface_hub[cli]'"; exit 1; fi
+else echo "!! hf CLI not found — run ./setup.sh first, or pip install -U huggingface_hub"; exit 1; fi
 
 # Recent huggingface_hub uses Xet transfer; enable high-performance mode (replaces the deprecated hf_transfer)
 export HF_XET_HIGH_PERFORMANCE=1
+
+# Who we are on HuggingFace. Gated repos (LTX-2.5) need both a login and an accepted
+# licence, and the two failures need different fixes, so record which one applies.
+HF_USER=""
+if HF_USER="$("$HF" auth whoami 2>/dev/null | head -n1)" && [[ -n "$HF_USER" ]]; then
+  echo ">> HuggingFace: logged in as $HF_USER"
+else
+  HF_USER=""
+  echo "!! HuggingFace: not logged in — gated repos will be refused."
+  echo "   Log in first:  $HF auth login"
+fi
+
+# Repos that answered "access denied". Once a repo is in here its remaining files are
+# skipped: without access every one of them fails identically, and four copies of the
+# same error buries the one line that says what to do about it.
+DENIED=""
+denied(){ [[ " $DENIED " == *" $1 "* ]]; }
+deny(){
+  DENIED="$DENIED $1"
+  echo
+  echo "  ── no access to $1 ──"
+  if [[ -z "$HF_USER" ]]; then
+    echo "     This repo is gated and you are not logged in. Run:"
+    echo "       $HF auth login"
+    echo "     then accept the licence at https://huggingface.co/$1"
+  else
+    echo "     You are logged in as $HF_USER, so the licence has not been accepted yet."
+    echo "     Open the page, click through the licence, then re-run this script:"
+    echo "       https://huggingface.co/$1"
+  fi
+  echo "     Skipping the remaining files from this repo."
+  echo
+}
 
 # dl <repo> <filename> <models subfolder>: matches by filename glob, so the exact path inside the repo does not matter
 dl(){
   local repo="$1" fname="$2" sub="$3"
   local dest="$COMFY/models/$sub"
   mkdir -p "$dest"
-  if [[ -f "$dest/$fname" ]]; then echo "  ✓ already present, skipping: $sub/$fname"; return 0; fi
+  if [[ -f "$dest/$fname" ]]; then
+    # Different repos ship different files under the same name (ae.safetensors is a
+    # common one). Record where each file came from, so a second repo wanting that name
+    # is reported instead of silently skipped as "already present".
+    local src=""; [[ -f "$dest/.$fname.from" ]] && src="$(cat "$dest/.$fname.from")"
+    if [[ -n "$src" && "$src" != "$repo" ]]; then
+      echo "  !! $sub/$fname is already here, but it came from $src, not $repo."
+      echo "     Those are different files sharing a name. Move the existing one aside"
+      echo "     if you need $repo's version, then re-run."
+      return 1
+    fi
+    echo "  ✓ already present, skipping: $sub/$fname"; return 0
+  fi
+  if denied "$repo"; then echo "  – skipped, no access to $repo: $fname"; return 1; fi
   echo ">> downloading: $fname  ←  $repo"
-  if ! "$HF" download "$repo" --include "**/$fname" --include "$fname" --local-dir "$STAGE/$repo" >/dev/null; then
-    echo "  !! download failed: $repo / $fname (check hf auth login / licence accepted)"; return 1
+  local err
+  # 2>&1 >/dev/null keeps stderr for inspection and drops the progress bars.
+  if ! err="$("$HF" download "$repo" --include "**/$fname" --include "$fname" --local-dir "$STAGE/$repo" 2>&1 >/dev/null)"; then
+    if grep -qiE 'access denied|requires approval|gated|awaiting a review|401 client error|403 client error' <<<"$err"; then
+      deny "$repo"
+    else
+      echo "  !! download failed: $repo / $fname"
+      echo "$err" | tail -n 3 | sed 's/^/     /'
+    fi
+    return 1
   fi
   local found; found="$(find "$STAGE/$repo" -type f -name "$fname" | head -n1)"
-  if [[ -n "$found" ]]; then mv -f "$found" "$dest/$fname"; echo "  → $dest/$fname"; else
+  if [[ -n "$found" ]]; then
+    mv -f "$found" "$dest/$fname"; printf '%s\n' "$repo" > "$dest/.$fname.from"
+    echo "  → $dest/$fname"
+  else
     echo "  !! $fname not found in the repo — use the ComfyUI template to auto-download it"; return 1; fi
 }
 
 get_ltx(){
   echo "=== LTX-2.5 (Lightricks, gated; text encoder is Gemma-4) ==="
-  dl "Lightricks/LTX-2.5" "ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors" "diffusion_models"
+  dl "Lightricks/LTX-2.5" "ltx-2.5-22b-distilled-transformer-fp8_e4m3fn.safetensors"           "diffusion_models"
   dl "Lightricks/LTX-2.5" "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors"       "text_encoders"
   dl "Lightricks/LTX-2.5" "ltx-2.5-video-vae-bf16.safetensors"                                 "vae"
   dl "Lightricks/LTX-2.5" "ltx-2.5-audio-vae-bf16.safetensors"                                 "vae"
-  # Optional: prompt enhancer / upscaler — uncomment to use
-  # dl "Lightricks/LTX-2.5" "gemma4_e2b_it_int8_convrot.safetensors" "text_encoders"
-  # dl "Lightricks/LTX-2.5" "ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors" "latent_upscale_models"
+  # The comparison workflow uses both of these, so they are not optional here.
+  dl "Lightricks/LTX-2.5" "gemma4_e2b_it_int8_convrot.safetensors"                             "text_encoders"
+  dl "Lightricks/LTX-2.5" "ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors"            "latent_upscale_models"
 }
 
 get_wan(){
@@ -66,11 +127,14 @@ get_wan(){
   dl "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors"  "diffusion_models"
   dl "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "umt5_xxl_fp8_e4m3fn_scaled.safetensors"           "text_encoders"
   dl "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "wan_2.1_vae.safetensors"                          "vae"
+  # The comparison workflow runs 4 steps with these distillation LoRAs applied.
+  dl "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors" "loras"
+  dl "Comfy-Org/Wan_2.2_ComfyUI_Repackaged" "wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise.safetensors"  "loras"
 }
 
 get_h3(){
   echo "=== MiniMax H3 / Hailuo 3.0 (Comfy-Org, local open weights int8; Qwen3-VL NVFP4 encoder) ==="
-  dl "Comfy-Org/MiniMax-H3" "minimax_h3_fl2va_pruned_int8_convrot.safetensors" "diffusion_models"
+  dl "Comfy-Org/MiniMax-H3" "minimax_h3_fl2va_pruned_nvfp4.safetensors"        "diffusion_models"
   dl "Comfy-Org/MiniMax-H3" "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"     "text_encoders"
   dl "Comfy-Org/MiniMax-H3" "minimax_h3_video_vae_fp16.safetensors"            "vae"
   dl "Comfy-Org/MiniMax-H3" "minimax_h3_audio_vae_fp32.safetensors"            "vae"
@@ -79,38 +143,50 @@ get_h3(){
 }
 
 get_flux2(){
-  echo "=== Flux.2 Klein 9B (Black Forest Labs, text-to-image) ==="
-  dl "black-forest-labs/FLUX.2-klein-9b-fp8" "flux-2-klein-9b-fp8.safetensors"  "diffusion_models"
-  dl "Comfy-Org/vae-text-encorder-for-flux-klein-9b" "flux2-vae.safetensors"    "vae"
-  dl "Comfy-Org/vae-text-encorder-for-flux-klein-9b" "qwen_3_8b.safetensors"   "text_encoders"
+  echo "=== FLUX.2 Dev NVFP4 mixed (Black Forest Labs; Mistral 3 Small text encoder) ==="
+  # Three different repos: the NVFP4 transformer and the small-decoder VAE come from
+  # Black Forest Labs, the ComfyUI-ready text encoder from Comfy-Org's repack.
+  dl "black-forest-labs/FLUX.2-dev-NVFP4" "flux2-dev-nvfp4-mixed.safetensors"      "diffusion_models"
+  dl "Comfy-Org/flux2-dev" "mistral_3_small_flux2_bf16.safetensors"                "text_encoders"
+  dl "black-forest-labs/FLUX.2-small-decoder" "full_encoder_small_decoder.safetensors" "vae"
 }
 
 get_qwen_image(){
   echo "=== Qwen-Image-2512 (Alibaba, text-to-image) ==="
-  dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_image_2512_bf16.safetensors"        "diffusion_models"
+  dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_image_2512_fp8_e4m3fn.safetensors" "diffusion_models"
   dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_2.5_vl_7b_fp8_scaled.safetensors"  "text_encoders"
   dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_image_vae.safetensors"             "vae"
 }
 
-get_zimage(){
-  echo "=== Z-Image Turbo (Alibaba Tongyi, 6B distilled text-to-image) ==="
-  dl "Comfy-Org/z_image_turbo" "z_image_turbo_bf16.safetensors"                    "diffusion_models"
-  dl "Comfy-Org/z_image_turbo" "qwen_3_4b.safetensors"                            "text_encoders"
-  dl "Comfy-Org/z_image_turbo" "ae.safetensors"                                    "vae"
-  dl "Comfy-Org/z_image_turbo" "z_image_turbo_distill_patch_lora_bf16.safetensors" "loras"
+get_hidream(){
+  echo "=== HiDream-I1 dev fp8 (Comfy-Org repack; four text encoders) ==="
+  dl "Comfy-Org/HiDream-I1_ComfyUI" "hidream_i1_dev_fp8.safetensors"              "diffusion_models"
+  dl "Comfy-Org/HiDream-I1_ComfyUI" "clip_l_hidream.safetensors"                  "text_encoders"
+  dl "Comfy-Org/HiDream-I1_ComfyUI" "clip_g_hidream.safetensors"                  "text_encoders"
+  dl "Comfy-Org/HiDream-I1_ComfyUI" "t5xxl_fp8_e4m3fn_scaled.safetensors"         "text_encoders"
+  dl "Comfy-Org/HiDream-I1_ComfyUI" "llama_3.1_8b_instruct_fp8_scaled.safetensors" "text_encoders"
+  dl "Comfy-Org/HiDream-I1_ComfyUI" "ae.safetensors"                              "vae"
+}
+
+get_h3turbo(){
+  echo "=== MiniMax H3 Turbo-8 / Turbo-4 (lightx2v distilled LoRAs) ==="
+  dl "lightx2v/Minimax-h3-Turbo" "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors"      "loras"
+  dl "lightx2v/Minimax-h3-Turbo" "minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors" "loras"
+  echo "   (these LoRAs also need the H3 encoder and VAEs: ./download-models.sh h3)"
 }
 
 case "${1:-all}" in
-  ltx)    get_ltx ;;
-  wan)    get_wan ;;
-  h3)     get_h3 ;;
-  flux2)  get_flux2 ;;
-  qwen)   get_qwen_image ;;
-  zimage) get_zimage ;;
-  video)  get_ltx; get_wan; get_h3 ;;
-  image)  get_flux2; get_qwen_image; get_zimage ;;
-  all)    get_ltx; get_wan; get_h3; get_flux2; get_qwen_image; get_zimage ;;
-  *)      echo "Usage: $0 [ltx|wan|h3|flux2|qwen|zimage|video|image|all]"; exit 1 ;;
+  ltx)      get_ltx ;;
+  wan)      get_wan ;;
+  h3)       get_h3 ;;
+  h3turbo)  get_h3turbo ;;
+  flux2)    get_flux2 ;;
+  qwen)     get_qwen_image ;;
+  hidream)  get_hidream ;;
+  video)    get_ltx; get_wan; get_h3; get_h3turbo ;;
+  image)    get_flux2; get_qwen_image; get_hidream ;;
+  all)      get_ltx; get_wan; get_h3; get_h3turbo; get_flux2; get_qwen_image; get_hidream ;;
+  *)        echo "Usage: $0 [ltx|wan|h3|h3turbo|flux2|qwen|hidream|video|image|all]"; exit 1 ;;
 esac
 
 echo

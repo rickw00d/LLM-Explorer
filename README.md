@@ -1,24 +1,56 @@
+<div align="center">
+
+# LLM Explorer
+
+**A local AI workstation for DGX Spark (GB10 Grace Blackwell)**
+
+Chat with several LLMs, generate images and video with ComfyUI, and compare
+generative models side by side from a single prompt — all on one machine.
+
+[![Platform](https://img.shields.io/badge/platform-DGX%20Spark%20·%20GB10-76B900)](https://www.nvidia.com/en-us/products/workstations/dgx-spark/)
+[![Arch](https://img.shields.io/badge/arch-aarch64-blue)](#)
+[![CUDA](https://img.shields.io/badge/CUDA-13.0%20·%20sm__121-green)](#)
+[![OS](https://img.shields.io/badge/Ubuntu-24.04-E95420)](#)
+[![Docs](https://img.shields.io/badge/docs-en%20·%20zh--TW%20·%20zh--CN-informational)](#languages)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-yellow)](LICENSE)
+
 **English** · [繁體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
 
-# LLM Explorer — Local AI Workstation on DGX Spark (GB10)
+</div>
 
-Three local services on a **GB10 Grace Blackwell** box (128 GB unified memory):
-chat with multiple LLMs, generate images and video with ComfyUI, and compare
-several generative models side by side from a single prompt.
+---
 
-| Service | Purpose | URL (local only) | Directory |
+| Service | Purpose | URL | Directory |
 |---|---|---|---|
 | **Open WebUI + Ollama** | Multi-LLM chat, hot-swappable models | http://localhost:8080 | [`chatbot/`](chatbot/) |
 | **ComfyUI** | Image/video generation backend | http://localhost:8188 | [`comfyui/`](comfyui/) |
 | **Model Comparison Tool** | One prompt, several models side by side (calls the ComfyUI API) | http://localhost:8890 | [`compare/`](compare/) |
 | **HuggingFace Space frontend** | Optional remote UI that tunnels back to this machine | — | [`space/`](space/) |
 
-> All three services bind to **127.0.0.1 only** by default. Public exposure is
-> opt-in and requires a shared token — see [Public access](#4-public-access-optional).
+> Open WebUI and ComfyUI bind to **127.0.0.1 only**. The comparison tool binds
+> **`0.0.0.0` (every interface)** by default, so other devices on your LAN can reach it;
+> set `COMPARE_HOST=127.0.0.1` to keep it on loopback. Without a token, anyone who can
+> reach port 8890 can push arbitrary workflows into ComfyUI — set one
+> (see [Public access](#4-public-access-optional)) or firewall the port.
 
 Hardware limits and memory management: [`docs/notes.md`](docs/notes.md).
 
 ---
+
+## Contents
+
+- [Quick start: one-shot installer](#quick-start-one-shot-installer)
+- [0. One-time prerequisites](#0-one-time-prerequisites)
+- [1. Chatbot (multi-LLM)](#1-chatbot-multi-llm)
+- [2. ComfyUI (image/video generation)](#2-comfyui-imagevideo-generation)
+- [3. Model comparison tool](#3-model-comparison-tool)
+- [4. Public access (optional)](#4-public-access-optional)
+- [5. Start at boot (optional)](#5-start-at-boot-optional)
+- [Things to keep in mind](#things-to-keep-in-mind)
+- [Languages](#languages)
+- [Repository layout](#repository-layout)
+- [Project documentation](#project-documentation)
 
 ## Quick start: one-shot installer
 
@@ -36,7 +68,7 @@ Menu items:
 1. System bootstrap — packages, Docker, CUDA checks
 2. ComfyUI environment — venv + PyTorch cu130
 3. Video models — LTX-2.5 / MiniMax H3 / Wan 2.2
-4. Image models — Flux.2 Klein / Qwen-Image / Z-Image Turbo
+4. Image models — FLUX.2 Dev / Qwen-Image / HiDream-I1
 5. Start ComfyUI + comparison tool
 6. Chatbot — Open WebUI + Ollama + LLMs
 
@@ -57,8 +89,9 @@ sudo usermod -aG docker $USER
 sudo apt-get update && sudo apt-get install -y python3-dev build-essential
 
 # HuggingFace CLI for model downloads (needed by the ComfyUI part)
-pip install -U "huggingface_hub[cli]"
-hf auth login          # LTX-2.5 is gated — accept the licence on its HF page first
+pip install -U huggingface_hub
+hf auth login          # then accept the LTX-2.5 licence, or its downloads are refused:
+                       # https://huggingface.co/Lightricks/LTX-2.5
 ```
 
 ## 1. Chatbot (multi-LLM)
@@ -79,7 +112,7 @@ To add or remove models, edit [`chatbot/models.txt`](chatbot/models.txt) and re-
 ```bash
 cd comfyui
 ./setup.sh             # venv + cu130 PyTorch + latest ComfyUI + Manager
-./download-models.sh   # all models; or pass one of: ltx wan h3 flux2 qwen zimage video image
+./download-models.sh   # all models; or one of: ltx wan h3 h3turbo flux2 qwen hidream video image
 ./start.sh             # start in the background → http://localhost:8188
 ./stop.sh              # stop
 ```
@@ -88,12 +121,24 @@ Models covered:
 
 | Model | Type | Notes |
 |---|---|---|
-| LTX-2.5 (Lightricks, 22B int8) | video | gated repo — accept the licence first |
-| MiniMax H3 / Hailuo 3.0 (int8) | video | use the **Local / open-weights** templates, not the API ones |
-| Wan 2.2 T2V 14B (fp8) | video | a single-frame output is effectively text-to-image |
-| Flux.2 Klein (9B fp8) | image | |
-| Qwen-Image-2512 (bf16) | image | |
-| Z-Image Turbo (6B bf16) | image | distilled, fast |
+| LTX-2.5 (Lightricks, 22B fp8_e4m3fn) | video | gated repo — accept the licence first |
+| MiniMax H3 / Hailuo 3.0 (NVFP4) | video | use the **Local / open-weights** templates, not the API ones |
+| Wan 2.2 T2V 14B (fp8) | video | runs 4 steps with the lightx2v distillation LoRAs |
+| H3 Turbo-8 / Turbo-4 (LoRAs) | video | distilled; also needs the `h3` files |
+| FLUX.2 Dev (NVFP4 mixed) | image | Mistral 3 Small encoder; weights span three repos |
+| Qwen-Image-2512 (fp8_e4m3fn) | image | |
+| HiDream-I1 dev (fp8) | image | four text encoders |
+
+> The download targets mirror the cards the comparison tool shows. Z-Image Turbo was
+> removed from that UI, so it is no longer downloaded. Different repos sometimes ship
+> different files under one name — `ae.safetensors` is the usual culprit — so the
+> downloader records where each file came from and says so when a second repo wants
+> that name, instead of leaving a model on the wrong VAE.
+>
+> The builds listed here are the ones the captured workflows in `compare/workflows/`
+> actually load. `python3 tools/check-models.py` compares the three lists — the cards
+> in `compare/server.py`, the weights each workflow selects, and the download targets —
+> and fails if they drift apart again.
 
 Fair-comparison method (same prompt / same seed): see
 [`comfyui/workflows/README.md`](comfyui/workflows/README.md).
@@ -106,9 +151,9 @@ Chinese and Simplified Chinese; it follows your browser language and remembers
 whatever you pick from the selector.
 
 ```bash
-cd compare && ./start.sh        # requires ComfyUI to be running
+cd compare && ./start.sh        # starts ComfyUI too, if it is not already up
                                 # → http://localhost:8890
-./stop.sh                       # stop
+./stop.sh                       # stops both
 ```
 
 First run: on each model card press **🎯 Capture from ComfyUI** (first open that
@@ -121,7 +166,7 @@ Environment variables:
 | Variable | Default | Meaning |
 |---|---|---|
 | `COMFY_URL` | `http://127.0.0.1:8188` | ComfyUI backend |
-| `COMPARE_HOST` / `COMPARE_PORT` | `127.0.0.1` / `8890` | bind address |
+| `COMPARE_HOST` / `COMPARE_PORT` | `0.0.0.0` / `8890` | bind address — `0.0.0.0` is every interface; use `127.0.0.1` for loopback only |
 | `COMPARE_TOKEN` | *(empty)* | set it to switch on public mode |
 | `COMPARE_MAX_PENDING` / `COMPARE_MAX_MODELS` / `COMPARE_MAX_PROMPT` | `8` / `3` / `2000` | public-mode limits |
 
@@ -150,6 +195,33 @@ cd compare && ./start.sh
 
 The HuggingFace Space frontend in [`space/`](space/) is the matching remote UI;
 its three-layer security model is documented in [`space/README.md`](space/README.md).
+
+---
+
+## 5. Start at boot (optional)
+
+```bash
+bash systemd/install.sh
+```
+
+Installs two systemd **user** services — `comfyui.service` and
+`llm-compare.service` — enables lingering so they start at boot without a login,
+and retires the older all-in-one `llm-explorer.service` if one is installed.
+
+```bash
+systemctl --user status comfyui llm-compare
+journalctl --user -u comfyui -f
+systemctl --user restart llm-compare
+```
+
+Both units run `run.sh`, which holds the launch flags and `exec`s, so systemd
+supervises the real process rather than a wrapper. Open WebUI needs nothing here:
+its container already carries `--restart unless-stopped`.
+
+> If you write a unit by hand, quote the path in `ExecStart`. systemd splits that
+> line on whitespace, so a repository path containing a space becomes a different
+> command and the service fails with `status=203/EXEC`, restarting forever.
+> `systemd/install.sh` writes the quotes for you.
 
 ---
 
@@ -185,12 +257,38 @@ LLM-Explorer/
 ├── chatbot/                    # Open WebUI + Ollama (Docker)
 │   ├── start.sh  stop.sh  pull-models.sh  models.txt
 ├── comfyui/                    # ComfyUI (native venv)
-│   ├── setup.sh  start.sh  stop.sh  download-models.sh
+│   ├── setup.sh  start.sh  run.sh  stop.sh  download-models.sh
 │   └── workflows/              # comparison workflow notes + your exported .json
-├── tools/check-i18n.py         # translation-table consistency check
+├── tools/                      # check-i18n.py (translations) · check-models.py (model lists)
 ├── compare/                    # comparison tool
-│   ├── server.py  index.html  i18n.js  start.sh  stop.sh  tunnel.sh
+│   ├── server.py  index.html  i18n.js  start.sh  run.sh  stop.sh  tunnel.sh
 │   └── workflows/              # captured per-model workflows
+├── systemd/                    # user services for starting at boot (install.sh)
 ├── space/                      # HuggingFace Space frontend
 └── docs/                       # documentation + GitHub Pages (index.html, i18n.js)
 ```
+
+---
+
+## Project documentation
+
+| Document | What it covers |
+|---|---|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | The checks to run, the language policy, and how to add a model card end to end |
+| [SECURITY.md](SECURITY.md) | What each service exposes, public mode, the tunnel interlock, hardening |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Service topology, the generation flow, i18n design, process supervision |
+| [docs/notes.md](docs/notes.md) | Hardware limits, memory management, troubleshooting |
+| [CHANGELOG.md](CHANGELOG.md) | What has changed |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Contributor Covenant 2.1 |
+
+Consistency checks, both of which should pass on a clean checkout:
+
+```bash
+python3 tools/check-i18n.py     # the three translation tables agree
+python3 tools/check-models.py   # cards, workflows and download targets agree
+```
+
+## Licence
+
+[MIT](LICENSE). The weights this toolkit downloads carry their own licences — LTX-2.5
+and the FLUX.2 repositories are gated and you must accept theirs separately.

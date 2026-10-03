@@ -1,23 +1,55 @@
+<div align="center">
+
+# LLM Explorer
+
+**DGX Spark（GB10 Grace Blackwell）本地 AI 工作站**
+
+在同一台機器上跟多個 LLM 對話、用 ComfyUI 生圖與生影片，
+並以同一個 prompt 並排比較多個生成式模型。
+
+[![Platform](https://img.shields.io/badge/platform-DGX%20Spark%20·%20GB10-76B900)](https://www.nvidia.com/en-us/products/workstations/dgx-spark/)
+[![Arch](https://img.shields.io/badge/arch-aarch64-blue)](#)
+[![CUDA](https://img.shields.io/badge/CUDA-13.0%20·%20sm__121-green)](#)
+[![OS](https://img.shields.io/badge/Ubuntu-24.04-E95420)](#)
+[![Docs](https://img.shields.io/badge/docs-en%20·%20zh--TW%20·%20zh--CN-informational)](#語言)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.zh-TW.md)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-yellow)](LICENSE)
+
 [English](README.md) · **繁體中文** · [简体中文](README.zh-CN.md)
 
-# LLM Explorer — DGX Spark（GB10）本地 AI 工作站
+</div>
 
-在一台 **GB10 Grace Blackwell**（128GB 統一記憶體）上跑三套本地服務：多 LLM 聊天、
-用 ComfyUI 生圖／生影片，以及「同一個 prompt、多模型並排比較」的網頁工具。
+---
 
-| 服務 | 用途 | 網址（僅本機） | 目錄 |
+| 服務 | 用途 | 網址 | 目錄 |
 |---|---|---|---|
 | **Open WebUI + Ollama** | 多 LLM 聊天，可熱切換模型 | http://localhost:8080 | [`chatbot/`](chatbot/) |
 | **ComfyUI** | 生圖／生影片後端 | http://localhost:8188 | [`comfyui/`](comfyui/) |
 | **模型比較工具** | 同一個 prompt，多模型並排比較（呼叫 ComfyUI API） | http://localhost:8890 | [`compare/`](compare/) |
 | **HuggingFace Space 前端** | 選用的遠端介面，透過通道連回本機 | — | [`space/`](space/) |
 
-> 三個服務預設都**只綁定 127.0.0.1**。對外開放需自行啟用，且必須設共享密鑰，
-> 見[對外開放](#4-對外開放選用)。
+> Open WebUI 與 ComfyUI **只綁定 127.0.0.1**。模型比較工具預設綁定
+> **`0.0.0.0`（所有網路介面）**，同網段的其他裝置可以直接連上；想限回本機，
+> 設 `COMPARE_HOST=127.0.0.1`。沒有密鑰時，任何連得到 8890 的人都能把任意
+> workflow 推進你的 ComfyUI —— 請設密鑰（見[對外開放](#4-對外開放選用)）或用防火牆擋掉這個埠。
 
 硬體限制與記憶體管理見 [`docs/notes.zh-TW.md`](docs/notes.zh-TW.md)。
 
 ---
+
+## 目錄
+
+- [快速開始：一鍵安裝](#快速開始一鍵安裝)
+- [0. 一次性前置](#0-一次性前置)
+- [1. Chatbot（多 LLM）](#1-chatbot多-llm)
+- [2. ComfyUI（生圖／生影片）](#2-comfyui生圖生影片)
+- [3. 模型比較工具](#3-模型比較工具)
+- [4. 對外開放（選用）](#4-對外開放選用)
+- [5. 開機自動啟動（選用）](#5-開機自動啟動選用)
+- [重要提醒](#重要提醒)
+- [語言](#語言)
+- [目錄結構](#目錄結構)
+- [專案文件](#專案文件)
 
 ## 快速開始：一鍵安裝
 
@@ -34,7 +66,7 @@ cd LLM-Explorer
 1. 系統初始化 — 套件、Docker、CUDA 檢查
 2. ComfyUI 環境 — venv + PyTorch cu130
 3. 影片模型 — LTX-2.5 / MiniMax H3 / Wan 2.2
-4. 圖片模型 — Flux.2 Klein / Qwen-Image / Z-Image Turbo
+4. 圖片模型 — FLUX.2 / Qwen-Image / HiDream-I1
 5. 啟動 ComfyUI + 比較工具
 6. Chatbot — Open WebUI + Ollama + LLM
 
@@ -56,8 +88,9 @@ sudo usermod -aG docker $USER
 sudo apt-get update && sudo apt-get install -y python3-dev build-essential
 
 # 下載模型用的 HuggingFace CLI（ComfyUI 部分需要）
-pip install -U "huggingface_hub[cli]"
-hf auth login          # LTX-2.5 為 gated，需先到其 HF 頁面接受授權
+pip install -U huggingface_hub
+hf auth login          # 接著要接受 LTX-2.5 的授權，否則下載會被拒絕：
+                       # https://huggingface.co/Lightricks/LTX-2.5
 ```
 
 ## 1. Chatbot（多 LLM）
@@ -78,7 +111,7 @@ cd chatbot
 ```bash
 cd comfyui
 ./setup.sh             # 建 venv + 裝 cu130 PyTorch + 最新 ComfyUI + Manager
-./download-models.sh   # 下載全部；也可指定 ltx|wan|h3|flux2|qwen|zimage|video|image
+./download-models.sh   # 下載全部；也可指定 ltx|wan|h3|h3turbo|flux2|qwen|hidream|video|image
 ./start.sh             # 背景啟動 → http://localhost:8188
 ./stop.sh              # 停止
 ```
@@ -87,12 +120,22 @@ cd comfyui
 
 | 模型 | 類型 | 備註 |
 |---|---|---|
-| LTX-2.5（Lightricks，22B int8） | 影片 | gated repo，需先接受授權 |
-| MiniMax H3 / Hailuo 3.0（int8） | 影片 | 用**本地開放權重版**模板，不要用 API 版 |
-| Wan 2.2 T2V 14B（fp8） | 影片 | 單張輸出即等同文生圖 |
-| Flux.2 Klein（9B fp8） | 圖片 | |
-| Qwen-Image-2512（bf16） | 圖片 | |
-| Z-Image Turbo（6B bf16） | 圖片 | 蒸餾版，較快 |
+| LTX-2.5（Lightricks，22B fp8_e4m3fn） | 影片 | gated repo，需先接受授權 |
+| MiniMax H3 / Hailuo 3.0（NVFP4） | 影片 | 用**本地開放權重版**模板，不要用 API 版 |
+| Wan 2.2 T2V 14B（fp8） | 影片 | 搭配 lightx2v 蒸餾 LoRA，跑 4 步 |
+| H3 Turbo-8 / Turbo-4（LoRA） | 影片 | 蒸餾版，另需 `h3` 的檔案 |
+| FLUX.2 Dev（NVFP4 mixed） | 圖片 | Mistral 3 Small 編碼器；權重分散在三個 repo |
+| Qwen-Image-2512（fp8_e4m3fn） | 圖片 | |
+| HiDream-I1 dev（fp8） | 圖片 | 需要四個文字編碼器 |
+
+> 下載目標對應比較工具上有的卡片。Z-Image Turbo 已從該介面移除，因此不再下載。
+> 不同 repo 偶爾會用同一個檔名放不同檔案（最常見的是 `ae.safetensors`），所以下載器
+> 會記錄每個檔案來自哪個 repo，換另一個 repo 要用同名檔案時直接告訴你，
+> 而不是讓某個模型默默套到錯的 VAE。
+>
+> 這裡列的版本就是 `compare/workflows/` 裡擷取到的 workflow 實際載入的版本。
+> 執行 `python3 tools/check-models.py` 會比對三份清單——`compare/server.py` 的卡片、
+> 各 workflow 實際選用的權重、以及下載目標——再次出現落差時就會失敗。
 
 公平比對方法（同 prompt／同 seed）見
 [`comfyui/workflows/README.zh-TW.md`](comfyui/workflows/README.zh-TW.md)。
@@ -104,9 +147,9 @@ cd comfyui
 也會記住你在語言選單中的選擇。
 
 ```bash
-cd compare && ./start.sh        # 需 ComfyUI 已在跑
+cd compare && ./start.sh        # ComfyUI 沒在跑的話會一併啟動
                                 # → http://localhost:8890
-./stop.sh                       # 停止
+./stop.sh                       # 兩個一起停
 ```
 
 首次使用：在每個模型的卡片按 **🎯 從 ComfyUI 擷取**（先在 ComfyUI 開該模型 Template 按一次 Run），
@@ -117,7 +160,7 @@ cd compare && ./start.sh        # 需 ComfyUI 已在跑
 | 變數 | 預設 | 意義 |
 |---|---|---|
 | `COMFY_URL` | `http://127.0.0.1:8188` | ComfyUI 後端位址 |
-| `COMPARE_HOST` / `COMPARE_PORT` | `127.0.0.1` / `8890` | 綁定位址 |
+| `COMPARE_HOST` / `COMPARE_PORT` | `0.0.0.0` / `8890` | 綁定位址 —— `0.0.0.0` 是所有介面，只要本機請設 `127.0.0.1` |
 | `COMPARE_TOKEN` | *(空)* | 設了就進入對外模式 |
 | `COMPARE_MAX_PENDING` / `COMPARE_MAX_MODELS` / `COMPARE_MAX_PROMPT` | `8` / `3` / `2000` | 對外模式上限 |
 
@@ -143,6 +186,32 @@ cd compare && ./start.sh
 
 [`space/`](space/) 是搭配的 HuggingFace Space 遠端前端，三層安全模型見
 [`space/README.zh-TW.md`](space/README.zh-TW.md)。
+
+---
+
+## 5. 開機自動啟動（選用）
+
+```bash
+bash systemd/install.sh
+```
+
+會安裝兩個 systemd **user** service（`comfyui.service` 與 `llm-compare.service`），
+啟用 lingering 讓它們開機就跑、不必先登入桌面，並停用舊版的單一
+`llm-explorer.service`（若有安裝）。
+
+```bash
+systemctl --user status comfyui llm-compare
+journalctl --user -u comfyui -f
+systemctl --user restart llm-compare
+```
+
+兩個 unit 都執行 `run.sh`；啟動參數寫在裡面，而且用 `exec`，所以 systemd 監管的是
+真正的行程而不是外層包裝。Open WebUI 不需要另外設定，它的容器本身就帶了
+`--restart unless-stopped`。
+
+> 自己手寫 unit 的話，`ExecStart` 的路徑一定要加引號。systemd 會以空白切分那一行，
+> 所以路徑只要含空格就會變成另一個指令，服務以 `status=203/EXEC` 失敗並無限重試。
+> `systemd/install.sh` 會幫你把引號加好。
 
 ---
 
@@ -174,11 +243,38 @@ LLM-Explorer/
 ├── chatbot/                    # Open WebUI + Ollama（Docker）
 │   ├── start.sh  stop.sh  pull-models.sh  models.txt
 ├── comfyui/                    # ComfyUI（原生 venv）
-│   ├── setup.sh  start.sh  stop.sh  download-models.sh
+│   ├── setup.sh  start.sh  run.sh  stop.sh  download-models.sh
 │   └── workflows/              # 比對 workflow 說明 + 你匯出的 .json
 ├── compare/                    # 比較工具
-│   ├── server.py  index.html  i18n.js  start.sh  stop.sh  tunnel.sh
+│   ├── server.py  index.html  i18n.js  start.sh  run.sh  stop.sh  tunnel.sh
 │   └── workflows/              # 擷取到的各模型 workflow
+├── tools/                      # check-i18n.py（翻譯）· check-models.py（模型清單）
+├── systemd/                    # 開機自動啟動用的 user service（install.sh）
 ├── space/                      # HuggingFace Space 前端
 └── docs/                       # 說明文件 + GitHub Pages（index.html、i18n.js）
 ```
+
+---
+
+## 專案文件
+
+| 文件 | 內容 |
+|---|---|
+| [CONTRIBUTING.zh-TW.md](CONTRIBUTING.zh-TW.md) | 該跑哪些檢查、語言政策、以及如何從頭到尾新增一張模型卡片 |
+| [SECURITY.zh-TW.md](SECURITY.zh-TW.md) | 各服務暴露什麼、對外模式、通道互鎖、強化清單 |
+| [docs/ARCHITECTURE.zh-TW.md](docs/ARCHITECTURE.zh-TW.md) | 服務拓樸、生成流程、i18n 設計、行程監管 |
+| [docs/notes.zh-TW.md](docs/notes.zh-TW.md) | 硬體限制、記憶體管理、疑難排解 |
+| [CHANGELOG.md](CHANGELOG.md) | 變更紀錄（英文） |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Contributor Covenant 2.1（英文） |
+
+一致性檢查，乾淨的 checkout 上兩個都該通過：
+
+```bash
+python3 tools/check-i18n.py     # 三份翻譯表是否一致
+python3 tools/check-models.py   # 卡片、workflow、下載目標是否一致
+```
+
+## 授權
+
+[MIT](LICENSE)。本工具組下載的模型權重各有自己的授權——LTX-2.5 與 FLUX.2 系列是 gated repo，
+必須另外接受它們的條款。

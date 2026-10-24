@@ -17,6 +17,11 @@ WorkingDirectory=@COMFYUI_DIR@
 ExecStart=@COMFYUI_RUN@
 Restart=on-failure
 RestartSec=15
+# run.sh exits 0 when a healthy ComfyUI already serves the port, so the unit settles
+# as inactive instead of retrying; RemainAfterExit keeps that visible rather than
+# looking like a crash. A port held by a non-ComfyUI process still exits non-zero and
+# trips the StartLimit above, which is what a real misconfiguration should do.
+RemainAfterExit=no
 # ComfyUI loads tens of GB of weights; give it room before systemd calls it hung.
 TimeoutStartSec=0
 KillMode=mixed

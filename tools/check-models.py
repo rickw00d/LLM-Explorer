@@ -73,7 +73,6 @@ EXTRA_OK = {
     # Staged newer builds. A card's target must fetch exactly what its captured
     # workflow loads, so the weights land under their own key first and the card
     # moves across once it has been re-captured in ComfyUI against them.
-    "qwen21",               # newer build for the qwen card
     "hidreamo1",            # newer build for the hidream card
 }
 for t in sorted(set(dispatch) - {"video", "image", "all"}):

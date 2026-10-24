@@ -111,7 +111,7 @@ cd chatbot
 ```bash
 cd comfyui
 ./setup.sh             # 建 venv + 裝 cu130 PyTorch + 最新 ComfyUI + Manager
-./download-models.sh   # 下載全部；也可指定 ltx|wan|h3|h3turbo|flux2|qwen|hidream|video|image
+./download-models.sh   # 下載全部；也可指定 ltx|wan|h3|h3turbo|flux2|qwen21|hidream|video|image
 ./start.sh             # 背景啟動 → http://localhost:8188
 ./stop.sh              # 停止
 ```
@@ -125,7 +125,7 @@ cd comfyui
 | Wan 2.2 T2V 14B（fp8） | 影片 | 搭配 lightx2v 蒸餾 LoRA，跑 4 步 |
 | H3 Turbo-8 / Turbo-4（LoRA） | 影片 | 蒸餾版，另需 `h3` 的檔案 |
 | FLUX.2 Dev（NVFP4 mixed） | 圖片 | Mistral 3 Small 編碼器；權重分散在三個 repo |
-| Qwen-Image-2512（fp8_e4m3fn） | 圖片 | |
+| Qwen-Image 2.1（7B，int8） | 圖片 | 授權尚未確認，見下方 |
 | HiDream-I1 dev（fp8） | 圖片 | 需要四個文字編碼器 |
 
 > 下載目標對應比較工具上有的卡片。Z-Image Turbo 已從該介面移除，因此不再下載。
@@ -139,12 +139,11 @@ cd comfyui
 
 ### 把卡片換到較新的版本
 
-有兩張卡片已經有更新的世代可用。權重和 workflow 必須一起換，所以各自先用獨立的
+有一張卡片已經有更新的世代可用。權重和 workflow 必須一起換，所以先用獨立的
 下載目標抓下來，卡片隨後跟上：
 
 ```bash
 cd comfyui
-./download-models.sh qwen21      # Qwen-Image-2.1（比 qwen 卡片的 2512 版新）
 ./download-models.sh hidreamo1   # HiDream-O1-Image（比 hidream 卡片的 I1 新）
 ```
 
@@ -152,8 +151,8 @@ cd comfyui
 `tools/check-models.py` 之後會指出該卡片自己的下載目標還缺哪些檔案；把那些併進去、
 刪掉舊的即可。
 
-> 決定換到 Qwen-Image-2.1 之前請先確認授權。Qwen-Image-2512 是 Apache 2.0，
-> 但各來源對 2.1 是否同樣寬鬆說法不一致，請先讀它的 model card。
+> qwen21 卡片的授權尚未確認。前一版 Qwen-Image-2512 是 Apache 2.0，但各來源對 2.1
+> 是否同樣寬鬆說法不一致，商業使用其輸出前請先讀它的 model card。
 
 公平比對方法（同 prompt／同 seed）見
 [`comfyui/workflows/README.zh-TW.md`](comfyui/workflows/README.zh-TW.md)。

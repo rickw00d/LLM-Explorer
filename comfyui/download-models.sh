@@ -5,13 +5,12 @@
 #
 #   ./download-models.sh          # everything (video + image)
 #   ./download-models.sh video    # video models (ltx + wan + h3 + h3turbo)
-#   ./download-models.sh image    # image models (flux2 + qwen + hidream)
+#   ./download-models.sh image    # image models (flux2 + qwen21 + hidream)
 #   ./download-models.sh flux2    # FLUX.2 Dev only
-#   ./download-models.sh qwen     # Qwen-Image-2512 only
+#   ./download-models.sh qwen21   # Qwen-Image 2.1 only
 #   ./download-models.sh hidream  # HiDream-I1 dev fp8 only
 #   ./download-models.sh h3turbo  # MiniMax H3 Turbo-8 / Turbo-4 LoRAs (needs h3 as well)
 #
-#   ./download-models.sh qwen21     # Qwen-Image-2.1, newer than the qwen card's build
 #   ./download-models.sh hidreamo1  # HiDream-O1-Image, newer than the hidream card's build
 #
 # Requires the HuggingFace CLI, logged in (LTX-2.5 is a gated repo — accept its licence):
@@ -154,11 +153,11 @@ get_flux2(){
   dl "black-forest-labs/FLUX.2-small-decoder" "full_encoder_small_decoder.safetensors" "vae"
 }
 
-get_qwen_image(){
-  echo "=== Qwen-Image-2512 (Alibaba, text-to-image) ==="
-  dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_image_2512_fp8_e4m3fn.safetensors" "diffusion_models"
-  dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_2.5_vl_7b_fp8_scaled.safetensors"  "text_encoders"
-  dl "Comfy-Org/Qwen-Image_ComfyUI" "qwen_image_vae.safetensors"             "vae"
+get_qwen_image_21(){
+  echo "=== Qwen-Image 2.1 (Alibaba, 7B DiT text-to-image; needs ComfyUI >= the TextEncodeQwenImage21 node) ==="
+  dl "Comfy-Org/Qwen-Image-2.1" "qwen_image_2.1_int8_convrot.safetensors"  "diffusion_models"
+  dl "Comfy-Org/Qwen-Image-2.1" "qwen3vl_8b_int8_convrot.safetensors"      "text_encoders"
+  dl "Comfy-Org/Qwen-Image-2.1" "qwen_image_2.1_vae_bf16.safetensors"      "vae"
 }
 
 get_hidream(){
@@ -178,21 +177,12 @@ get_h3turbo(){
   echo "   (these LoRAs also need the H3 encoder and VAEs: ./download-models.sh h3)"
 }
 
-# ---- Newer builds, staged for a card move --------------------------------------
-# These fetch a newer generation than the card currently runs. They are separate
-# targets, not replacements, because a card's download target has to fetch exactly
+# ---- Newer build, staged for a card move ---------------------------------------
+# This fetches a newer generation than the card currently runs. It is a separate
+# target, not a replacement, because a card's download target has to fetch exactly
 # what its captured workflow loads: the weights come first, the capture second.
 # Once the card is re-captured against the new build, fold these lines into the
 # card's own target above and drop the old ones.
-
-get_qwen21(){
-  echo "=== Qwen-Image-2.1 (Comfy-Org repack; Qwen3-VL 8B encoder, RGBA VAE) ==="
-  dl "Comfy-Org/Qwen-Image-2.1" "qwen_image_2.1_int8_convrot.safetensors" "diffusion_models"
-  dl "Comfy-Org/Qwen-Image-2.1" "qwen3vl_8b_bf16.safetensors"             "text_encoders"
-  dl "Comfy-Org/Qwen-Image-2.1" "qwen_image_2.1_vae_bf16.safetensors"     "vae"
-  echo "   Next: open the \"Qwen Image 2.1: Text to Image\" template in ComfyUI, run it once,"
-  echo "   then press Capture from ComfyUI on the Qwen-Image card to move it to this build."
-}
 
 get_hidream_o1(){
   echo "=== HiDream-O1-Image (Comfy-Org repack; one checkpoint + a Gemma-4 encoder) ==="
@@ -207,24 +197,23 @@ get_hidream_o1(){
 }
 
 case "${1:-all}" in
-  ltx)      get_ltx ;;
-  wan)      get_wan ;;
-  h3)       get_h3 ;;
-  h3turbo)  get_h3turbo ;;
-  flux2)    get_flux2 ;;
-  qwen)     get_qwen_image ;;
-  hidream)  get_hidream ;;
-  qwen21)    get_qwen21 ;;
+  ltx)       get_ltx ;;
+  wan)       get_wan ;;
+  h3)        get_h3 ;;
+  h3turbo)   get_h3turbo ;;
+  flux2)     get_flux2 ;;
+  qwen21)    get_qwen_image_21 ;;
+  hidream)   get_hidream ;;
   hidreamo1) get_hidream_o1 ;;
-  video)    get_ltx; get_wan; get_h3; get_h3turbo ;;
-  image)    get_flux2; get_qwen_image; get_hidream ;;
-  all)      get_ltx; get_wan; get_h3; get_h3turbo; get_flux2; get_qwen_image; get_hidream ;;
-  *)        echo "Usage: $0 [ltx|wan|h3|h3turbo|flux2|qwen|hidream|video|image|all]"
-            echo "       $0 [qwen21|hidreamo1]   # newer builds, staged for a card move"
-            echo "  qwen21 and hidreamo1 are outside the groups above: they fetch a newer"
-            echo "  generation than the card currently runs, so ask for them by name, then"
-            echo "  re-capture the card in ComfyUI before the card uses them."
-            exit 1 ;;
+  video)     get_ltx; get_wan; get_h3; get_h3turbo ;;
+  image)     get_flux2; get_qwen_image_21; get_hidream ;;
+  all)       get_ltx; get_wan; get_h3; get_h3turbo; get_flux2; get_qwen_image_21; get_hidream ;;
+  *)         echo "Usage: $0 [ltx|wan|h3|h3turbo|flux2|qwen21|hidream|video|image|all]"
+             echo "       $0 hidreamo1   # newer build, staged for a card move"
+             echo "  hidreamo1 is outside the groups above: it fetches a newer generation"
+             echo "  than the hidream card currently runs, so ask for it by name, then"
+             echo "  re-capture the card in ComfyUI before the card uses it."
+             exit 1 ;;
 esac
 
 echo

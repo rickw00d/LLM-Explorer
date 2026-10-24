@@ -315,15 +315,15 @@
         </table>
       </div>
       <div class="info-card">
-        <h4>Qwen-Image 2512 <span class="badge image" data-i18n="spec.badgeImage"></span></h4>
+        <h4>Qwen-Image 2.1 <span class="badge image" data-i18n="spec.badgeImage"></span></h4>
         <table>
-          <tr><td data-i18n="spec.params"></td><td>20B</td></tr>
-          <tr><td data-i18n="spec.precision"></td><td>FP8</td></tr>
-          <tr><td data-i18n="spec.vram"></td><td>~20 GB</td></tr>
-          <tr><td data-i18n="spec.steps"></td><td>30 (CFG=1)</td></tr>
-          <tr><td data-i18n="spec.textenc"></td><td>Qwen2.5-VL 7B</td></tr>
-          <tr><td data-i18n="spec.bestres"></td><td>1024² ~ 1664×928</td></tr>
-          <tr><td data-i18n="spec.licence"></td><td>Apache 2.0</td></tr>
+          <tr><td data-i18n="spec.params"></td><td>7B DiT</td></tr>
+          <tr><td data-i18n="spec.precision"></td><td>int8</td></tr>
+          <tr><td data-i18n="spec.vram"></td><td data-i18n="spec.notMeasured"></td></tr>
+          <tr><td data-i18n="spec.steps"></td><td>25 (CFG=1)</td></tr>
+          <tr><td data-i18n="spec.textenc"></td><td>Qwen3-VL 8B</td></tr>
+          <tr><td data-i18n="spec.bestres"></td><td>1024²</td></tr>
+          <tr><td data-i18n="spec.licence"></td><td data-i18n="spec.licenceCheck"></td></tr>
         </table>
       </div>
       <div class="info-card">
@@ -389,13 +389,14 @@
     return of(u,o);
   };})();
 const $ = s => document.querySelector(s);
-let STATE = {}, ORDER = ["ltx","wan","h3","h3t8","h3t4","flux2","qwen","hidream"], LABELS = {}, otype = "image";
+let STATE = {}, ORDER = ["qwen21","ltx","wan","h3","h3t8","h3t4","flux2","hidream"], LABELS = {}, otype = "image";
 const VIDEO_MODELS = ["ltx","h3","h3t8","h3t4","wan"];
-const IMAGE_MODELS = ["flux2","qwen","hidream"];
-const selected = new Set(["flux2","qwen","hidream"]);
+const IMAGE_MODELS = ["qwen21","flux2","hidream"];
+const selected = new Set(["qwen21","flux2","hidream"]);
 
 const FALLBACK_LABELS = {"ltx":"LTX-2.5","wan":"Wan 2.2","h3":"MiniMax H3",
-  "h3t8":"H3 Turbo-8","h3t4":"H3 Turbo-4","flux2":"FLUX.2 Dev","qwen":"Qwen-Image","hidream":"HiDream-I1"};
+  "h3t8":"H3 Turbo-8","h3t4":"H3 Turbo-4","flux2":"FLUX.2 Dev",
+  "qwen21":"Qwen-Image 2.1","hidream":"HiDream-I1"};
 if(!Object.keys(LABELS).length) LABELS = {...FALLBACK_LABELS};
 
 let COMFY_URL = "";
@@ -474,7 +475,7 @@ $("#typeSeg").querySelectorAll("button").forEach(b=>{
     $("#typeSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
     selected.clear();
     if(otype==="video"){ selected.add("ltx"); selected.add("h3"); }
-    else { selected.add("flux2"); selected.add("qwen"); selected.add("hidream"); }
+    else { selected.add("qwen21"); selected.add("flux2"); selected.add("hidream"); }
     updateRes(); renderChips(); };
 });
 const RES_VIDEO = [["860x480","860×480 (SD)"],["1376x768","1376×768 (HD)",true],["1920x1080","1920×1080 (FHD)"],["2560x1440","2560×1440 (2K)"]];

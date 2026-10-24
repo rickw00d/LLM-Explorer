@@ -112,7 +112,7 @@ To add or remove models, edit [`chatbot/models.txt`](chatbot/models.txt) and re-
 ```bash
 cd comfyui
 ./setup.sh             # venv + cu130 PyTorch + latest ComfyUI + Manager
-./download-models.sh   # all models; or one of: ltx wan h3 h3turbo flux2 qwen hidream video image
+./download-models.sh   # all models; or one of: ltx wan h3 h3turbo flux2 qwen21 hidream video image
 ./start.sh             # start in the background → http://localhost:8188
 ./stop.sh              # stop
 ```
@@ -126,7 +126,7 @@ Models covered:
 | Wan 2.2 T2V 14B (fp8) | video | runs 4 steps with the lightx2v distillation LoRAs |
 | H3 Turbo-8 / Turbo-4 (LoRAs) | video | distilled; also needs the `h3` files |
 | FLUX.2 Dev (NVFP4 mixed) | image | Mistral 3 Small encoder; weights span three repos |
-| Qwen-Image-2512 (fp8_e4m3fn) | image | |
+| Qwen-Image 2.1 (7B, int8) | image | licence unverified — see below |
 | HiDream-I1 dev (fp8) | image | four text encoders |
 
 > The download targets mirror the cards the comparison tool shows. Z-Image Turbo was
@@ -142,12 +142,11 @@ Models covered:
 
 ### Moving a card to a newer build
 
-Two cards have a newer generation available. The weights and the workflow have to move
-together, so each one is fetched under its own target first and the card follows:
+One card has a newer generation available. The weights and the workflow have to move
+together, so it is fetched under its own target first and the card follows:
 
 ```bash
 cd comfyui
-./download-models.sh qwen21      # Qwen-Image-2.1 (newer than the qwen card's 2512 build)
 ./download-models.sh hidreamo1   # HiDream-O1-Image (newer than the hidream card's I1)
 ```
 
@@ -155,8 +154,9 @@ Then in ComfyUI open that model's official template, run it once, and press
 **🎯 Capture from ComfyUI** on the card. `tools/check-models.py` will then name the
 files the card's own download target still needs; fold them in and drop the old ones.
 
-> Check the licence before you commit to Qwen-Image-2.1. Qwen-Image-2512 is Apache 2.0;
-> sources disagree on whether 2.1 is, so read its model card first.
+> The qwen21 card's licence is not yet verified. The previous build, Qwen-Image-2512, was
+> Apache 2.0; sources disagree on whether 2.1 is, so read its model card before you use
+> its output commercially.
 
 Fair-comparison method (same prompt / same seed): see
 [`comfyui/workflows/README.md`](comfyui/workflows/README.md).

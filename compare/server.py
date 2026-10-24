@@ -57,17 +57,18 @@ try:
 except Exception:
     TPL_DIR = None
 
-MODELS = ["ltx", "h3", "h3t8", "h3t4", "wan", "flux2", "qwen", "hidream"]
+MODELS = ["qwen21", "ltx", "h3", "h3t8", "h3t4", "wan", "flux2", "hidream"]
 MODEL_LABEL = {"ltx": "LTX-2.5", "wan": "Wan 2.2", "h3": "MiniMax H3",
                "h3t8": "H3 Turbo-8", "h3t4": "H3 Turbo-4",
-               "flux2": "FLUX.2 Dev", "qwen": "Qwen-Image", "hidream": "HiDream-I1"}
+               "flux2": "FLUX.2 Dev", "qwen21": "Qwen-Image 2.1",
+               "hidream": "HiDream-I1"}
 # Identify the model from diffusion_models / encoder filenames (most distinctive first)
 SIGNATURES = [
     ("ltx", ["ltx-2.5", "ltx2", "ltx-2", "ltx_"]),
     ("h3",  ["minimax_h3", "minimax", "hailuo", "_h3_"]),
     ("wan", ["wan2.2", "wan2_2", "wan_2.2", "wan_2.1", "umt5", "wan2", "wan_"]),
     ("flux2", ["flux2", "flux_2", "flux.2"]),
-    ("qwen", ["qwen_image", "qwen-image", "qwen_2.5_vl"]),
+    ("qwen21", ["qwen_image_2.1", "qwen_image_2_1", "qwen3vl_8b"]),
     ("hidream", ["hidream", "hi_dream"]),
 ]
 VIDEO_EXT = (".mp4", ".webm", ".gif", ".mov", ".mkv", ".m4v")

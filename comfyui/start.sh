@@ -23,6 +23,17 @@ if pid_alive "$PIDF" "main.py"; then
 fi
 rm -f "$PIDF"
 
+# If the systemd unit is installed, it owns ComfyUI: starting our own nohup copy here
+# would race it for port 8188 and leave the unit crash-looping in the "failed" state.
+# Delegate instead, so there is exactly one launcher no matter which command is typed.
+if systemctl --user cat comfyui.service >/dev/null 2>&1; then
+  echo ">> comfyui.service is installed — starting it through systemd instead."
+  systemctl --user start comfyui.service
+  systemctl --user --no-pager --lines=0 status comfyui.service || true
+  echo ">> Follow the log:  journalctl --user -u comfyui -f"
+  exit 0
+fi
+
 echo ">> Starting ComfyUI in the background… log: $LOG"
 # run.sh holds the launch flags and execs, so this PID is the real ComfyUI process.
 nohup "$SCRIPT_DIR/run.sh" >"$LOG" 2>&1 &

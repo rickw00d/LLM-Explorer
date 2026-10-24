@@ -137,6 +137,24 @@ cd comfyui
 > 运行 `python3 tools/check-models.py` 会比对三份清单——`compare/server.py` 的卡片、
 > 各 workflow 实际选用的权重、以及下载目标——再次出现落差时就会失败。
 
+### 把卡片换到较新的版本
+
+有两张卡片已经有更新的世代可用。权重和 workflow 必须一起换，所以各自先用独立的
+下载目标抓下来，卡片随后跟上：
+
+```bash
+cd comfyui
+./download-models.sh qwen21      # Qwen-Image-2.1（比 qwen 卡片的 2512 版新）
+./download-models.sh hidreamo1   # HiDream-O1-Image（比 hidream 卡片的 I1 新）
+```
+
+接着在 ComfyUI 打开该模型的官方模板、跑一次，然后在卡片上按 **🎯 Capture from ComfyUI**。
+`tools/check-models.py` 之后会指出该卡片自己的下载目标还缺哪些文件；把那些并进去、
+删掉旧的即可。
+
+> 决定换到 Qwen-Image-2.1 之前请先确认许可。Qwen-Image-2512 是 Apache 2.0，
+> 但各来源对 2.1 是否同样宽松说法不一致，请先读它的 model card。
+
 公平对比方法（同 prompt／同 seed）见
 [`comfyui/workflows/README.zh-CN.md`](comfyui/workflows/README.zh-CN.md)。
 

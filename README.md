@@ -140,6 +140,24 @@ Models covered:
 > in `compare/server.py`, the weights each workflow selects, and the download targets —
 > and fails if they drift apart again.
 
+### Moving a card to a newer build
+
+Two cards have a newer generation available. The weights and the workflow have to move
+together, so each one is fetched under its own target first and the card follows:
+
+```bash
+cd comfyui
+./download-models.sh qwen21      # Qwen-Image-2.1 (newer than the qwen card's 2512 build)
+./download-models.sh hidreamo1   # HiDream-O1-Image (newer than the hidream card's I1)
+```
+
+Then in ComfyUI open that model's official template, run it once, and press
+**🎯 Capture from ComfyUI** on the card. `tools/check-models.py` will then name the
+files the card's own download target still needs; fold them in and drop the old ones.
+
+> Check the licence before you commit to Qwen-Image-2.1. Qwen-Image-2512 is Apache 2.0;
+> sources disagree on whether 2.1 is, so read its model card first.
+
 Fair-comparison method (same prompt / same seed): see
 [`comfyui/workflows/README.md`](comfyui/workflows/README.md).
 

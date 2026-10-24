@@ -11,6 +11,9 @@
 #   ./download-models.sh hidream  # HiDream-I1 dev fp8 only
 #   ./download-models.sh h3turbo  # MiniMax H3 Turbo-8 / Turbo-4 LoRAs (needs h3 as well)
 #
+#   ./download-models.sh qwen21     # Qwen-Image-2.1, newer than the qwen card's build
+#   ./download-models.sh hidreamo1  # HiDream-O1-Image, newer than the hidream card's build
+#
 # Requires the HuggingFace CLI, logged in (LTX-2.5 is a gated repo — accept its licence):
 #   pip install -U huggingface_hub
 #   hf auth login
@@ -175,6 +178,34 @@ get_h3turbo(){
   echo "   (these LoRAs also need the H3 encoder and VAEs: ./download-models.sh h3)"
 }
 
+# ---- Newer builds, staged for a card move --------------------------------------
+# These fetch a newer generation than the card currently runs. They are separate
+# targets, not replacements, because a card's download target has to fetch exactly
+# what its captured workflow loads: the weights come first, the capture second.
+# Once the card is re-captured against the new build, fold these lines into the
+# card's own target above and drop the old ones.
+
+get_qwen21(){
+  echo "=== Qwen-Image-2.1 (Comfy-Org repack; Qwen3-VL 8B encoder, RGBA VAE) ==="
+  dl "Comfy-Org/Qwen-Image-2.1" "qwen_image_2.1_int8_convrot.safetensors" "diffusion_models"
+  dl "Comfy-Org/Qwen-Image-2.1" "qwen3vl_8b_bf16.safetensors"             "text_encoders"
+  dl "Comfy-Org/Qwen-Image-2.1" "qwen_image_2.1_vae_bf16.safetensors"     "vae"
+  echo "   Next: open the \"Qwen Image 2.1: Text to Image\" template in ComfyUI, run it once,"
+  echo "   then press Capture from ComfyUI on the Qwen-Image card to move it to this build."
+}
+
+get_hidream_o1(){
+  echo "=== HiDream-O1-Image (Comfy-Org repack; one checkpoint + a Gemma-4 encoder) ==="
+  # O1 ships as a single checkpoint, not a split transformer plus four text encoders
+  # the way HiDream-I1 does.
+  dl "Comfy-Org/HiDream-O1-Image" "hidream_o1_image_fp8_scaled.safetensors" "checkpoints"
+  # The prompt-enhancement encoder lives in its own repo and is shared across versions.
+  dl "Comfy-Org/gemma-4" "gemma4_e4b_it_fp8_scaled.safetensors"            "text_encoders"
+  echo "   Next: open the HiDream-O1 template in ComfyUI, run it once, then press"
+  echo "   Capture from ComfyUI on the HiDream-I1 card to move it to this build."
+  echo "   (mxfp8 and bf16 builds also exist in the same repo if fp8_scaled misbehaves.)"
+}
+
 case "${1:-all}" in
   ltx)      get_ltx ;;
   wan)      get_wan ;;
@@ -183,10 +214,17 @@ case "${1:-all}" in
   flux2)    get_flux2 ;;
   qwen)     get_qwen_image ;;
   hidream)  get_hidream ;;
+  qwen21)    get_qwen21 ;;
+  hidreamo1) get_hidream_o1 ;;
   video)    get_ltx; get_wan; get_h3; get_h3turbo ;;
   image)    get_flux2; get_qwen_image; get_hidream ;;
   all)      get_ltx; get_wan; get_h3; get_h3turbo; get_flux2; get_qwen_image; get_hidream ;;
-  *)        echo "Usage: $0 [ltx|wan|h3|h3turbo|flux2|qwen|hidream|video|image|all]"; exit 1 ;;
+  *)        echo "Usage: $0 [ltx|wan|h3|h3turbo|flux2|qwen|hidream|video|image|all]"
+            echo "       $0 [qwen21|hidreamo1]   # newer builds, staged for a card move"
+            echo "  qwen21 and hidreamo1 are outside the groups above: they fetch a newer"
+            echo "  generation than the card currently runs, so ask for them by name, then"
+            echo "  re-capture the card in ComfyUI before the card uses them."
+            exit 1 ;;
 esac
 
 echo

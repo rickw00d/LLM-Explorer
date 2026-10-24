@@ -67,7 +67,15 @@ for c in sorted(wf_cards - set(cards)):
                     f"or delete compare/workflows/{c}.*")
 
 # downloader targets nothing shows
-EXTRA_OK = {"h3turbo"}   # serves the h3t8 / h3t4 cards
+# Targets that legitimately have no card of their own.
+EXTRA_OK = {
+    "h3turbo",              # serves the h3t8 / h3t4 cards
+    # Staged newer builds. A card's target must fetch exactly what its captured
+    # workflow loads, so the weights land under their own key first and the card
+    # moves across once it has been re-captured in ComfyUI against them.
+    "qwen21",               # newer build for the qwen card
+    "hidreamo1",            # newer build for the hidream card
+}
 for t in sorted(set(dispatch) - {"video", "image", "all"}):
     if t not in cards and t not in EXTRA_OK:
         problems.append(f"download target '{t}' has no card in the comparison tool "

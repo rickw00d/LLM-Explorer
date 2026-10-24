@@ -12,7 +12,7 @@
 - **LTX-2.5** — 官方 T2V / I2V / 含音訊模板
 - **Wan 2.2** — T2V（單張輸出即等同文生圖）
 - **MiniMax H3** — 選 **Local / open-weights** 版本的三個模板（**不要**選 API 版）
-- **Flux.2 Klein**、**Qwen-Image**、**Z-Image Turbo** — 文生圖模板
+- **FLUX.2**、**Qwen-Image**、**HiDream-I1** — 文生圖模板
 
 線上對照文件：
 

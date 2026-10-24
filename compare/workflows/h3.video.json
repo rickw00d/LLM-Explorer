@@ -350,7 +350,7 @@
         "opt:tc",
         0
       ],
-      "enabled": true,
+      "enabled": false,
       "tau": 1.3,
       "min_tokens": 4096,
       "strict": false,

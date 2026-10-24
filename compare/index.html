@@ -72,6 +72,7 @@
   .btn:disabled{opacity:.45;cursor:not-allowed}
   .btn.ghost{background:transparent;color:var(--fg);box-shadow:none;border:1px solid var(--line)}
   .btn.ghost:hover:not(:disabled){border-color:var(--acc);color:var(--acc);background:var(--acc-light)}
+  .chatlink{padding:8px 16px;font-size:13px;text-decoration:none;white-space:nowrap}
   .btn.stop{background:transparent;color:var(--err);box-shadow:none;border:1px solid var(--err);padding:11px 18px}
   .btn.stop:hover:not(:disabled){background:var(--err);color:#fff}
 
@@ -90,7 +91,10 @@
   .mchip .dot{width:9px;height:9px;border-radius:50%;background:var(--err);transition:all .3s}
   .mchip.ready .dot{background:var(--ok);box-shadow:0 0 0 3px rgba(61,154,110,.15)}
 
-  .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  .grid{display:flex;flex-direction:column;gap:24px}
+  .grid-run{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    padding-bottom:24px;border-bottom:1px dashed var(--line)}
+  .grid-run:last-child{border-bottom:none;padding-bottom:0}
 
   .col{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
        display:flex;flex-direction:column;box-shadow:var(--shadow-sm);
@@ -175,6 +179,7 @@
       <div class="sub" data-i18n="app.sub"></div>
     </div>
     <div style="display:flex;gap:10px;align-items:center">
+      <a href="http://localhost:8080" target="_blank" class="btn ghost chatlink" data-i18n="nav.chat"></a>
       <select class="langsel" id="langSel" data-i18n-title="lang.label" aria-label="Language" hidden></select>
       <div class="qbox" id="qbox" data-i18n-title="queue.title">
         <span class="qdot" id="qdot"></span>
@@ -221,8 +226,8 @@
       <div>
         <label data-i18n="ctl.output"></label>
         <div class="seg" id="typeSeg">
-          <button data-t="image" data-i18n="ctl.image"></button>
-          <button data-t="video" class="on" data-i18n="ctl.video"></button>
+          <button data-t="image" class="on" data-i18n="ctl.image"></button>
+          <button data-t="video" data-i18n="ctl.video"></button>
         </div>
       </div>
       <div style="flex:2">
@@ -265,6 +270,24 @@
           <tr><td data-i18n="spec.licence"></td><td data-i18n="spec.minimaxOpen"></td></tr>
         </table>
         <div class="info-note" data-i18n="spec.h3note"></div>
+      </div>
+      <div class="info-card">
+        <h4>H3 Turbo-8 <span class="badge video" data-i18n="spec.badgeVideo"></span></h4>
+        <table>
+          <tr><td data-i18n="spec.base"></td><td data-i18n="spec.h3tBase"></td></tr>
+          <tr><td data-i18n="spec.steps"></td><td data-i18n="spec.h3t8Steps"></td></tr>
+          <tr><td data-i18n="spec.source"></td><td data-i18n="spec.h3tSource"></td></tr>
+          <tr><td data-i18n="spec.quality"></td><td data-i18n="spec.h3t8Quality"></td></tr>
+        </table>
+      </div>
+      <div class="info-card">
+        <h4>H3 Turbo-4 <span class="badge video" data-i18n="spec.badgeVideo"></span></h4>
+        <table>
+          <tr><td data-i18n="spec.base"></td><td data-i18n="spec.h3tBase"></td></tr>
+          <tr><td data-i18n="spec.steps"></td><td data-i18n="spec.h3t4Steps"></td></tr>
+          <tr><td data-i18n="spec.source"></td><td data-i18n="spec.h3tSource"></td></tr>
+          <tr><td data-i18n="spec.quality"></td><td data-i18n="spec.h3t4Quality"></td></tr>
+        </table>
       </div>
       <div class="info-card">
         <h4>Wan 2.2 <span class="badge video" data-i18n="spec.badgeVideo"></span></h4>
@@ -358,8 +381,6 @@
 <script>
 // Public mode: if the browser has a stored token (localStorage.compareToken), attach
 // the auth header to every /api/* request. Local mode needs none — leave it empty.
-// 對外模式：若瀏覽器存過 token（localStorage.compareToken），
-// 自動幫所有 /api/* 請求帶上認證標頭。本機模式不需要，留空即可。
 (()=>{const t=localStorage.getItem("compareToken");if(!t)return;
   const of=window.fetch;
   window.fetch=(u,o={})=>{
@@ -368,10 +389,14 @@
     return of(u,o);
   };})();
 const $ = s => document.querySelector(s);
-let STATE = {}, ORDER = ["ltx","wan","h3","flux2","qwen","hidream"], LABELS = {}, otype = "video";
-const VIDEO_MODELS = ["ltx","h3","wan"];
+let STATE = {}, ORDER = ["ltx","wan","h3","h3t8","h3t4","flux2","qwen","hidream"], LABELS = {}, otype = "image";
+const VIDEO_MODELS = ["ltx","h3","h3t8","h3t4","wan"];
 const IMAGE_MODELS = ["flux2","qwen","hidream"];
-const selected = new Set(["ltx","h3"]);
+const selected = new Set(["flux2","qwen","hidream"]);
+
+const FALLBACK_LABELS = {"ltx":"LTX-2.5","wan":"Wan 2.2","h3":"MiniMax H3",
+  "h3t8":"H3 Turbo-8","h3t4":"H3 Turbo-4","flux2":"FLUX.2 Dev","qwen":"Qwen-Image","hidream":"HiDream-I1"};
+if(!Object.keys(LABELS).length) LABELS = {...FALLBACK_LABELS};
 
 let COMFY_URL = "";
 
@@ -383,7 +408,10 @@ function applyComfyLink(){
 }
 
 async function loadState(){
-  const r = await fetch("/api/models"); const d = await r.json();
+  const r = await fetch("/api/models");
+  if(r.status===401){ try{ askToken(); }catch(e){} renderChips(); return; }
+  const d = await r.json();
+  if(!d.order){ renderChips(); return; }
   STATE = d.models; ORDER = d.order; LABELS = d.labels;
   if (d.comfy) COMFY_URL = d.comfy;
   applyComfyLink();
@@ -655,8 +683,10 @@ $("#go").onclick=async()=>{
   const seed=parseInt($("#seed").value||"0",10);
   newSeed();
   $("#go").disabled=true; $("#hint").textContent=t("msg.submitting");
-  // Lay out the columns first
-  const grid=$("#grid"); grid.innerHTML="";
+  // Lay out the columns first. Each run goes into its own .grid-run, inserted at the
+  // top, so earlier runs stay on the page instead of being wiped.
+  const grid=$("#grid");
+  const run=document.createElement("div"); run.className="grid-run";
   const cols={};
   const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   models.forEach(m=>{
@@ -664,8 +694,9 @@ $("#go").onclick=async()=>{
     c.innerHTML=`<h3>${LABELS[m]}<span class="meta" style="font-size:11px">seed ${seed}</span></h3>
       <div class="usedPrompt" title="${esc(prompt)}">📝 ${esc(prompt)}</div>
       <div class="body"><div class="spin"></div><div class="status">${t("msg.queued")}</div></div>`;
-    grid.appendChild(c); cols[m]=c;
+    run.appendChild(c); cols[m]=c;
   });
+  grid.insertBefore(run, grid.firstChild);
   const r=await fetch("/api/generate",{method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({prompt,seed,type:otype,models,resolution:$("#resSel").value})});
@@ -690,6 +721,15 @@ async function poll(m, pid, col, t0){
   const body=col.querySelector(".body");
   try{
     const r=await fetch("/api/status?id="+encodeURIComponent(pid));
+    // An expired or rotated token answers 401. That is valid JSON and throws nothing, so
+    // without this branch it falls past every if, never schedules the next poll, and the
+    // column sits on "generating" forever.
+    if(r.status===401){
+      body.innerHTML=`<div class="status err">${t("msg.tokenInvalid")} <a href="#" class="reTok" style="text-decoration:underline">${t("msg.reenterToken")}</a></div>`;
+      const a=body.querySelector(".reTok");
+      if(a) a.onclick=e=>{e.preventDefault();askToken();};
+      return;
+    }
     const d=await r.json();
     if(d.state==="queued"){
       body.innerHTML=`<div class="spin"></div><div class="status">${t("msg.queued")}</div>`;
@@ -735,7 +775,11 @@ async function poll(m, pid, col, t0){
       const vram=d.vram_gb?`<span>💾 ${d.vram_gb} GB</span>`:"";
       meta.innerHTML=`<span>⏱️ ${took}s</span>${vram}`;
       body.appendChild(meta);
+      return;
     }
+    // Unrecognised response: keep polling instead of stopping silently. Without this,
+    // any unexpected response shape freezes the column with no clue as to why.
+    setTimeout(()=>poll(m,pid,col,t0),2000);
   }catch(e){ setTimeout(()=>poll(m,pid,col,t0),2000); }
 }
 

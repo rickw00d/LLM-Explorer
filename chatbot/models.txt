@@ -2,18 +2,23 @@
 # Lines starting with # are skipped. Save your edits, then run ./pull-models.sh.
 # Full catalogue: https://ollama.com/library
 #
-# Note: some newer tags (qwen3.6 and friends) may not be published yet; if a pull
-# fails, check the tag on ollama.com/library.
+# Note: a tag that fails to pull is usually either unpublished or newer than the
+# Ollama build inside the open-webui container. Check it on ollama.com/library, and
+# fall back to the previous generation listed below it.
 # With 128 GB of unified memory you can run large models, or keep several
 # mid-sized ones loaded at once.
 
 # --- Everyday chat (recommended defaults) ---
-qwen3.6:27b            # best all-round chat · bilingual EN/ZH · 256K context · ~17GB
-gemma3:27b            # Google general chat · vision · ~20GB
+qwen3.8:27b            # best all-round chat · text+image in · 262K context · ~18GB
+gemma4:31b             # Google general chat · vision · 256K context · ~20GB
+# qwen3.6:27b          # previous generation, if 3.8 will not pull · ~17GB
+# gemma3:27b           # previous generation · ~20GB
+# gemma4:26b           # MoE, 4B active — faster for the same footprint · ~17GB
 
 # --- Reasoning / maths ---
 deepseek-r1:70b        # strongest local reasoning/maths · chain of thought · ~43GB
 # deepseek-r1:32b      # distilled, lighter · ~20GB
+# (the DeepSeek V4 line is cloud-only — no local weights to pull)
 
 # --- Coding ---
 qwen3-coder:30b        # top-tier code model · 256K context · ~19GB

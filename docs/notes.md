@@ -25,11 +25,12 @@
   format; NVIDIA quotes up to 3x throughput and -60% memory for video generation.
 - Monitoring: `watch -n2 nvidia-smi` for the GPU, `watch -n2 free -h` for unified memory.
 
-## Access scope: localhost only by default
+## Access scope
 
 - Open WebUI binds `127.0.0.1:8080`
 - ComfyUI binds `127.0.0.1:8188` (start.sh does not pass `--listen`)
-- Comparison tool binds `127.0.0.1:8890` (`COMPARE_HOST` / `COMPARE_PORT` to change)
+- Comparison tool binds `0.0.0.0:8890` — reachable from the LAN. Set
+  `COMPARE_HOST=127.0.0.1` to restrict it to this machine.
 
 To reach the services from another machine on the LAN:
 

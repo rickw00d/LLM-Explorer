@@ -1,0 +1,27 @@
+[Unit]
+Description=ComfyUI (LLM Explorer)
+Documentation=https://github.com/rickw00d/LLM-Explorer
+After=network-online.target
+Wants=network-online.target
+# Give up after five failures in five minutes instead of retrying forever.
+# A unit that restarts every 10s never trips systemd's default 10s rate limit,
+# which is how the old hand-written unit reached 1853 failed starts unnoticed.
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+# Quoting matters: systemd splits ExecStart on whitespace, and the repository path
+# may contain spaces. install.sh writes these lines already quoted.
+WorkingDirectory=@COMFYUI_DIR@
+ExecStart=@COMFYUI_RUN@
+Restart=on-failure
+RestartSec=15
+# ComfyUI loads tens of GB of weights; give it room before systemd calls it hung.
+TimeoutStartSec=0
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutStopSec=60
+
+[Install]
+WantedBy=default.target

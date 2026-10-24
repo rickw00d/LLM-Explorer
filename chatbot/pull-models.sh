@@ -16,9 +16,11 @@ pull_one() { echo ">> pull: $1"; docker exec "$NAME" ollama pull "$1"; }
 if [[ $# -ge 1 ]]; then
   pull_one "$1"
 else
-  # Read models.txt, skipping blank lines and # comments
-  grep -vE '^\s*(#|$)' "$SCRIPT_DIR/models.txt" | while read -r m; do
-    pull_one "$m"
+  # Read models.txt, skipping blank lines and # comments. Entries carry a trailing
+  # "# description", so read the tag into m and discard the rest — passing the whole
+  # line to ollama pull fails.
+  grep -vE '^\s*(#|$)' "$SCRIPT_DIR/models.txt" | while read -r m _; do
+    [[ -n "$m" ]] && pull_one "$m"
   done
 fi
 
